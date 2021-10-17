@@ -1,0 +1,32 @@
+{
+  "name": "nono",
+  "version": "0.0.1",
+  "description": "Multiplayer Nonograms",
+  "bin": {
+    "nono": "./bin/nono"
+  },
+  "scripts": {
+    "build": "cake build",
+    "watch": "cake watch"
+  },
+  "author": "Joe Drago",
+  "devDependencies": {
+    "browserify": "^16.5.0",
+    "clipboard": "^2.0.8",
+    "coffeeify": "^3.0.1",
+    "coffeescript": "^2.4.1",
+    "node-watch": "^0.6.3",
+    "uglifyify": "^5.0.2"
+  },
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "bottleneck": "^2.19.5",
+    "build": "^0.1.4",
+    "express": "^4.17.1",
+    "iso8601-duration": "^1.2.0",
+    "markdown-it": "^12.0.4",
+    "markdown-it-attrs": "^4.0.0",
+    "minimist": "^1.2.5",
+    "socket.io": "^2.3.0"
+  }
+}

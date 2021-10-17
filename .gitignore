@@ -1,0 +1,12 @@
+node_modules/
+rp/super_secret.h
+/backup
+/auth.json
+/companies.json
+/nicknames.json
+/opinions.json
+/playlist.json
+/secrets.json
+/state.json
+/ignored.json
+/userplaylists.json

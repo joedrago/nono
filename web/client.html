@@ -1,0 +1,54 @@
+<html>
+<style>
+body, html {
+    margin: 0px;
+    padding: 0px;
+    background-color: #000;
+    color: #fff;
+}
+
+#identity {
+    margin-right: 10px;
+    top: 0px;
+    right: 0px;
+    display: block;
+    text-align: right;
+    float: right;
+    color: #777;
+    font-family: monospace;
+}
+
+#error {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    text-align: center;
+    color: #ff0000;
+    font-size: 1.4em;
+    font-family: monospace;
+    display: none;
+}
+
+#errortext {
+    color: #ff0000;
+    font-size: 1.4em;
+    font-family: monospace;
+    display: none;
+}
+
+</style>
+<body>
+
+<div id="identity"></div>
+<div id="main"></div>
+<div id="error"></div>
+<div id="errortext"></div>
+
+<script>
+window.CLIENT_ID = "!CLIENT_ID!";
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+</body>
+</html>
