@@ -8,14 +8,15 @@ body, html {
 }
 
 #identity {
-    margin-right: 10px;
+    position: fixed;
     top: 0px;
     right: 0px;
+    margin-right: 10px;
     display: block;
     text-align: right;
-    float: right;
     color: #777;
     font-family: monospace;
+    z-index: 3;
 }
 
 #error {
@@ -37,11 +38,17 @@ body, html {
     display: none;
 }
 
+#main {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+}
+
 </style>
 <body>
 
+<canvas id="main"></canvas>
 <div id="identity"></div>
-<div id="main"></div>
 <div id="error"></div>
 <div id="errortext"></div>
 

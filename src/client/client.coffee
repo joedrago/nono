@@ -41,6 +41,7 @@ sendView = ->
   socket.emit 'view', viewPayload
 
 receiveView = (pkt) ->
+  console.log "receiveView: ", pkt
   NonoClient.update(pkt)
 
 # ---------------------------------------------------------------------------------------
@@ -75,7 +76,8 @@ receiveIdentity = (pkt) ->
     discordNickname = null
     discordToken = null
 
-    redirectURL = String(window.location).replace(/#.*$/, "") + "oauth"
+    redirectURL = String(window.location).replace(/\/[^\/]*$/, "/") + "oauth" #+ "?vid=#{encodeURIComponent(viewID)}"
+    console.log "redirectURL #{redirectURL}"
     loginLink = "https://discord.com/api/oauth2/authorize?client_id=#{window.CLIENT_ID}&redirect_uri=#{encodeURIComponent(redirectURL)}&response_type=code&scope=identify"
     html = """
       [<a href="#{loginLink}">Login</a>]
@@ -93,7 +95,7 @@ init = ->
   token = qs('token')
   if token?
     localStorage.setItem('token', token)
-    # window.location = '/'
+    window.location = '/'
     return
 
   viewID = qs('vid')
