@@ -208,4 +208,10 @@ export class SaveManager {
         const slotData = this.getCurrentSlotData()
         return this.calculateCompletionPercent(slotData.completedPuzzles)
     }
+
+    // Get list of completed puzzle IDs
+    getCompletedPuzzles() {
+        const slotData = this.getCurrentSlotData()
+        return slotData.completedPuzzles || []
+    }
 }

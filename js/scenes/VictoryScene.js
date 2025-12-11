@@ -24,6 +24,12 @@ export class VictoryScene extends Phaser.Scene {
         // Check for achievements
         this.achievementManager.checkFirstSolve()
 
+        // Check for difficulty completion achievements (only for curated puzzles)
+        if (!this.infiniteMode) {
+            const allPuzzles = this.registry.get("puzzles") || []
+            this.achievementManager.checkDifficultyCompletion(allPuzzles)
+        }
+
         this.createUI()
         this.setupInput()
         this.createParticles()

@@ -5,6 +5,21 @@ export const ACHIEVEMENTS = [
         id: "first_solve",
         title: "Baby Steps",
         description: "Complete your first puzzle"
+    },
+    {
+        id: "all_easy",
+        title: "Warming Up",
+        description: "Complete all Easy puzzles"
+    },
+    {
+        id: "all_medium",
+        title: "Getting Serious",
+        description: "Complete all Medium puzzles"
+    },
+    {
+        id: "all_hard",
+        title: "Puzzle Master",
+        description: "Complete all Hard puzzles"
     }
 ]
 
@@ -66,6 +81,33 @@ export class AchievementManager {
     // Check achievements based on game events
     checkFirstSolve() {
         return this.grantAchievement("first_solve")
+    }
+
+    // Check if all puzzles of a difficulty are completed
+    checkDifficultyCompletion(allPuzzles) {
+        const completed = this.saveManager.getCompletedPuzzles()
+        const granted = []
+
+        // Group puzzles by difficulty
+        const byDifficulty = { easy: [], medium: [], hard: [] }
+        for (const puzzle of allPuzzles) {
+            if (byDifficulty[puzzle.difficulty]) {
+                byDifficulty[puzzle.difficulty].push(puzzle.id)
+            }
+        }
+
+        // Check each difficulty
+        if (byDifficulty.easy.length > 0 && byDifficulty.easy.every((id) => completed.includes(id))) {
+            if (this.grantAchievement("all_easy")) granted.push("all_easy")
+        }
+        if (byDifficulty.medium.length > 0 && byDifficulty.medium.every((id) => completed.includes(id))) {
+            if (this.grantAchievement("all_medium")) granted.push("all_medium")
+        }
+        if (byDifficulty.hard.length > 0 && byDifficulty.hard.every((id) => completed.includes(id))) {
+            if (this.grantAchievement("all_hard")) granted.push("all_hard")
+        }
+
+        return granted
     }
 
     // Get count of earned achievements
