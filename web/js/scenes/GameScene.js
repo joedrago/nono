@@ -33,6 +33,7 @@ export class GameScene extends Phaser.Scene {
         // Load settings from profile
         this.showErrors = this.saveManager.getShowErrors()
         this.dimHints = this.saveManager.getDimHints()
+        this.peekErrors = false
 
         // Set background color from theme
         this.cameras.main.setBackgroundColor(this.themeManager.graphics.background)
@@ -414,8 +415,11 @@ export class GameScene extends Phaser.Scene {
         const padding = 2
         const size = this.cellSize - padding * 2
 
+        // Show errors if setting is on OR if peeking
+        const errorsVisible = this.showErrors || this.peekErrors
+
         // Check if this is an error (filled but shouldn't be)
-        const isError = this.showErrors && state === this.FILLED && this.puzzle.solution[gridY][gridX] === 0
+        const isError = errorsVisible && state === this.FILLED && this.puzzle.solution[gridY][gridX] === 0
 
         if (state === this.EMPTY) {
             graphics.fillStyle(theme.graphics.cellEmpty, 1)
@@ -427,8 +431,10 @@ export class GameScene extends Phaser.Scene {
         } else if (state === this.MARKED) {
             graphics.fillStyle(theme.graphics.cellEmpty, 1)
             graphics.fillRect(screenX + padding, screenY + padding, size, size)
-            // Draw X
-            graphics.lineStyle(2, theme.graphics.cellMarker, 1)
+            // Draw X - use error color if marked but should be filled
+            const isMarkedError = errorsVisible && this.puzzle.solution[gridY][gridX] === 1
+            const markerColor = isMarkedError ? theme.graphics.cellMarkerError : theme.graphics.cellMarker
+            graphics.lineStyle(2, markerColor, 1)
             graphics.moveTo(screenX + padding + 4, screenY + padding + 4)
             graphics.lineTo(screenX + padding + size - 4, screenY + padding + size - 4)
             graphics.moveTo(screenX + padding + size - 4, screenY + padding + 4)
@@ -635,6 +641,20 @@ export class GameScene extends Phaser.Scene {
                 this.showPauseMenu()
             }
             this.playSound("navigate")
+        })
+
+        // Peek (Y key) - temporarily show errors while held
+        this.inputManager.on("peekDown", (_gamepadIndex) => {
+            if (this.paused) return
+            this.peekErrors = true
+            this.refreshUI()
+        })
+
+        this.inputManager.on("peekUp", (_gamepadIndex) => {
+            this.peekErrors = false
+            if (!this.paused) {
+                this.refreshUI()
+            }
         })
     }
 

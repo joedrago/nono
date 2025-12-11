@@ -146,8 +146,8 @@ export class InputManager {
             // Only emit if not already held (prevents auto-repeat)
             if (!held[action]) {
                 held[action] = true
-                // Emit down event for accept/back (used for drag-to-fill)
-                if (action === "accept" || action === "back") {
+                // Emit down event for accept/back (used for drag-to-fill) and peek (used for temp show errors)
+                if (action === "accept" || action === "back" || action === "peek") {
                     this.emit(action + "Down", virtualIndex)
                 }
                 this.emit(action, virtualIndex)
@@ -166,8 +166,8 @@ export class InputManager {
             const held = this.getHeldState(this.keyboardVirtualIndex)
             if (held[action]) {
                 held[action] = false
-                // Emit up event for accept/back (used for drag-to-fill)
-                if (action === "accept" || action === "back") {
+                // Emit up event for accept/back (used for drag-to-fill) and peek (used for temp show errors)
+                if (action === "accept" || action === "back" || action === "peek") {
                     this.emit(action + "Up", this.keyboardVirtualIndex)
                 }
             }
@@ -284,7 +284,7 @@ export class InputManager {
             case "Escape":
                 return "start" // Start button
             case "KeyY":
-                return "delete" // Y button
+                return "peek" // Temporarily show errors
             default:
                 return null
         }
@@ -410,7 +410,8 @@ export class InputManager {
                 accept: false,
                 back: false,
                 start: false,
-                delete: false
+                delete: false,
+                peek: false
             })
         }
         return this.heldButtons.get(virtualIndex)
