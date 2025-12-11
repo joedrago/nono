@@ -365,7 +365,7 @@ export class NonogramValidator {
             .map(() => Array(width).fill(0))
 
         // Generate using random rectangular blocks
-        const numBlocks = Math.floor((width * height) / 8) + Math.floor(Math.random() * (width * height) / 8)
+        const numBlocks = Math.floor((width * height) / 8) + Math.floor((Math.random() * (width * height)) / 8)
 
         for (let i = 0; i < numBlocks; i++) {
             // Random block dimensions - prefer wider/taller blocks
@@ -409,7 +409,7 @@ export class NonogramValidator {
         }
 
         // Clear some random cells to create gaps (but not too many)
-        const clearCount = Math.floor((width * height) * 0.1 * Math.random())
+        const clearCount = Math.floor(width * height * 0.1 * Math.random())
         for (let i = 0; i < clearCount; i++) {
             const x = Math.floor(Math.random() * width)
             const y = Math.floor(Math.random() * height)

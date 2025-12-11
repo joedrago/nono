@@ -167,7 +167,6 @@ export class MainMenuScene extends Phaser.Scene {
                     break
             }
         })
-
     }
 
     handleResize() {

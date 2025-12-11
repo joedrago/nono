@@ -6,7 +6,8 @@
 const GAMEPAD_TYPE = {
     PHYSICAL: "physical",
     KEYBOARD: "keyboard",
-    REMOTE: "remote"
+    REMOTE: "remote",
+    TAP: "tap"
 }
 
 // Singleton instance
@@ -37,10 +38,14 @@ export class InputManager {
         // Keyboard virtual index (lazy init)
         this.keyboardVirtualIndex = null
 
+        // Tap (mouse/touch) virtual index (lazy init)
+        this.tapVirtualIndex = null
+
         // Track if global listeners are registered
         this.keyboardListenerRegistered = false
         this.gamepadListenerRegistered = false
         this.remoteListenerRegistered = false
+        this.tapListenerRegistered = false
 
         // Key repeat configuration
         this.repeatInitialDelay = 600 // ms before first repeat
@@ -82,6 +87,9 @@ export class InputManager {
         if (!this.remoteListenerRegistered) {
             this.setupRemote()
         }
+        if (!this.tapListenerRegistered) {
+            this.setupTap()
+        }
 
         // Re-emit gamepadConnected for all known gamepads so scene can track them
         this.virtualGamepads.forEach((_info, virtualIndex) => {
@@ -115,6 +123,14 @@ export class InputManager {
             this.keyboardVirtualIndex = this.registerVirtualGamepad(GAMEPAD_TYPE.KEYBOARD, "keyboard")
         }
         return this.keyboardVirtualIndex
+    }
+
+    // Get virtual index for tap (mouse/touch) (lazy initialization)
+    getTapVirtualIndex() {
+        if (this.tapVirtualIndex === null) {
+            this.tapVirtualIndex = this.registerVirtualGamepad(GAMEPAD_TYPE.TAP, "tap")
+        }
+        return this.tapVirtualIndex
     }
 
     // Get virtual index for a physical gamepad
@@ -226,6 +242,108 @@ export class InputManager {
             if (!this.activeScene) return
             this.handleRemoteAction(data)
         })
+    }
+
+    setupTap() {
+        this.tapListenerRegistered = true
+
+        // Get the canvas element from Phaser
+        const canvas = this.game.canvas
+
+        // Helper to get coordinates from mouse or touch event
+        const getCoords = (event) => {
+            const rect = canvas.getBoundingClientRect()
+            if (event.touches && event.touches.length > 0) {
+                return {
+                    x: event.touches[0].clientX - rect.left,
+                    y: event.touches[0].clientY - rect.top
+                }
+            } else if (event.changedTouches && event.changedTouches.length > 0) {
+                return {
+                    x: event.changedTouches[0].clientX - rect.left,
+                    y: event.changedTouches[0].clientY - rect.top
+                }
+            } else {
+                return {
+                    x: event.clientX - rect.left,
+                    y: event.clientY - rect.top
+                }
+            }
+        }
+
+        // Mouse down / Touch start - emit tapMove to teleport, then acceptDown
+        const handlePointerDown = (event) => {
+            if (!this.activeScene) return
+
+            // Lazily initialize tap as a virtual gamepad on first input
+            const virtualIndex = this.getTapVirtualIndex()
+            const held = this.getHeldState(virtualIndex)
+            const coords = getCoords(event)
+
+            // First emit tapMove so scene can teleport cursor to nearest item
+            this.emitTapMove(virtualIndex, coords.x, coords.y)
+
+            // Then press accept button
+            if (!held.accept) {
+                held.accept = true
+                this.markButtonPressed(virtualIndex, "accept")
+                this.emit("acceptDown", virtualIndex)
+                this.emit("accept", virtualIndex)
+            }
+        }
+
+        // Mouse up / Touch end - release accept button
+        const handlePointerUp = (_event) => {
+            if (!this.activeScene) return
+
+            // Only process if tap has been initialized
+            if (this.tapVirtualIndex === null) return
+
+            const held = this.getHeldState(this.tapVirtualIndex)
+            if (held.accept) {
+                held.accept = false
+                this.markButtonReleased(this.tapVirtualIndex, "accept")
+                this.emit("acceptUp", this.tapVirtualIndex)
+            }
+        }
+
+        // Mouse move / Touch move - emit tapMove for cursor teleportation
+        const handlePointerMove = (event) => {
+            if (!this.activeScene) return
+
+            // Lazily initialize tap as a virtual gamepad on first input
+            const virtualIndex = this.getTapVirtualIndex()
+            const coords = getCoords(event)
+
+            this.emitTapMove(virtualIndex, coords.x, coords.y)
+        }
+
+        // Register mouse events
+        canvas.addEventListener("mousedown", handlePointerDown)
+        canvas.addEventListener("mouseup", handlePointerUp)
+        canvas.addEventListener("mousemove", handlePointerMove)
+
+        // Register touch events
+        canvas.addEventListener("touchstart", (event) => {
+            event.preventDefault() // Prevent scrolling/zooming
+            handlePointerDown(event)
+        })
+        canvas.addEventListener("touchend", (event) => {
+            event.preventDefault()
+            handlePointerUp(event)
+        })
+        canvas.addEventListener("touchmove", (event) => {
+            event.preventDefault()
+            handlePointerMove(event)
+        })
+    }
+
+    // Emit tapMove event with coordinates
+    emitTapMove(virtualIndex, x, y) {
+        const callbacks = this.listeners.get("tapMove")
+        if (callbacks) {
+            callbacks.forEach((cb) => cb(virtualIndex, x, y))
+        }
     }
 
     handleRemoteAction(data) {
@@ -490,6 +608,11 @@ export class InputManager {
     // Get count of active virtual gamepads
     getConnectedGamepadCount() {
         return this.virtualGamepads.size
+    }
+
+    // Check if tap (mouse/touch) virtual gamepad is currently attached
+    tapActive() {
+        return this.tapVirtualIndex !== null
     }
 
     // Key repeat methods

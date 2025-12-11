@@ -38,21 +38,26 @@ export class ProfileSelectScene extends Phaser.Scene {
 
         // Slot buttons
         this.slots = []
-        const slotStartY = this.uiScale.percent(35)
-        const slotSpacing = this.uiScale.percent(15)
+        this.slotStartY = this.uiScale.percent(35)
+        this.slotSpacing = this.uiScale.percent(15)
 
         for (let i = 0; i < 3; i++) {
-            const slot = this.createSlot(i, slotStartY + i * slotSpacing)
+            const slot = this.createSlot(i, this.slotStartY + i * this.slotSpacing)
             this.slots.push(slot)
             this.uiContainer.add(slot.container)
         }
 
         // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Select   [Select] Delete Profile", {
-            fontFamily: "monospace",
-            fontSize: this.uiScale.fontSize.small + "px",
-            color: "#8888aa"
-        })
+        this.instructions = this.add.text(
+            this.uiScale.centerX,
+            this.uiScale.percent(88),
+            "[A] Select   [Select] Delete Profile",
+            {
+                fontFamily: "monospace",
+                fontSize: this.uiScale.fontSize.small + "px",
+                color: "#8888aa"
+            }
+        )
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
 
@@ -169,6 +174,43 @@ export class ProfileSelectScene extends Phaser.Scene {
                 this.playSound("navigate")
             }
         })
+
+        // Handle tap/mouse move - teleport selection to nearest slot
+        this.inputManager.on("tapMove", (_gamepadIndex, x, y) => {
+            if (this.confirmingDelete) return
+
+            const nearestSlot = this.findNearestSlot(x, y)
+            if (nearestSlot !== -1 && nearestSlot !== this.selectedSlot) {
+                this.selectedSlot = nearestSlot
+                this.updateSelection()
+            }
+        })
+    }
+
+    // Find the nearest slot to the given screen coordinates
+    findNearestSlot(x, y) {
+        let nearestIndex = -1
+        let nearestDistance = Infinity
+
+        for (let i = 0; i < this.slots.length; i++) {
+            const slot = this.slots[i]
+            const slotY = this.slotStartY + i * this.slotSpacing
+            const slotX = this.uiScale.centerX
+
+            // Calculate distance from tap to slot center
+            const dx = x - slotX
+            const dy = y - slotY
+            const distance = Math.sqrt(dx * dx + dy * dy)
+
+            // Check if tap is within reasonable range of the slot
+            const maxDistance = Math.max(slot.width, slot.height)
+            if (distance < maxDistance && distance < nearestDistance) {
+                nearestDistance = distance
+                nearestIndex = i
+            }
+        }
+
+        return nearestIndex
     }
 
     showDeleteConfirm(slotIndex) {
