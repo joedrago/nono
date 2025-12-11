@@ -1,6 +1,7 @@
 import { InputManager } from "../utils/InputManager.js"
 import { UIScale } from "../utils/UIScale.js"
 import { SaveManager } from "../utils/SaveManager.js"
+import { NonogramValidator } from "../utils/NonogramValidator.js"
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -54,14 +55,30 @@ export class GameScene extends Phaser.Scene {
     generateInfinitePuzzle() {
         const sizes = { easy: 5, medium: 10, hard: 15 }
         const size = sizes[this.infiniteDifficulty] || 5
+        const validator = new NonogramValidator()
 
-        this.puzzle = {
-            id: "infinite_" + Date.now(),
-            name: "Infinite",
-            difficulty: this.infiniteDifficulty,
-            width: size,
-            height: size,
-            solution: this.generateRandomSolution(size, size)
+        // Generate a valid, solvable puzzle
+        const result = validator.generateValidPuzzle(size, size, 50)
+
+        if (result && result.valid) {
+            this.puzzle = {
+                id: "infinite_" + Date.now(),
+                name: "Infinite",
+                difficulty: this.infiniteDifficulty,
+                width: size,
+                height: size,
+                solution: result.solution
+            }
+        } else {
+            // Fallback to simple pattern if generation fails
+            this.puzzle = {
+                id: "infinite_" + Date.now(),
+                name: "Infinite",
+                difficulty: this.infiniteDifficulty,
+                width: size,
+                height: size,
+                solution: this.generateFallbackSolution(size, size)
+            }
         }
 
         this.playerGrid = Array(this.puzzle.height)
@@ -69,19 +86,17 @@ export class GameScene extends Phaser.Scene {
             .map(() => Array(this.puzzle.width).fill(this.EMPTY))
     }
 
-    generateRandomSolution(width, height) {
-        // Generate a random solution with reasonable density (30-70% filled)
-        const density = 0.3 + Math.random() * 0.4
+    generateFallbackSolution(width, height) {
+        // Generate a simple diagonal pattern that's always solvable
         const solution = []
-
         for (let y = 0; y < height; y++) {
             const row = []
             for (let x = 0; x < width; x++) {
-                row.push(Math.random() < density ? 1 : 0)
+                // Simple pattern: checkerboard with some filled rows/cols
+                row.push((x + y) % 3 === 0 ? 1 : 0)
             }
             solution.push(row)
         }
-
         return solution
     }
 

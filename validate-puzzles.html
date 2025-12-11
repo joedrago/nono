@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nonogram Puzzle Validator</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a2e;
+            color: #e0e0ff;
+            padding: 20px;
+        }
+        .valid { color: #00ff00; }
+        .invalid { color: #ff4444; }
+        .puzzle-result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #333355;
+            border-radius: 5px;
+        }
+        h1 { color: #8888ff; }
+        h2 { color: #aaaacc; }
+    </style>
+</head>
+<body>
+    <h1>Nonogram Puzzle Validator</h1>
+    <div id="results">Loading...</div>
+
+    <script type="module">
+        import { NonogramValidator } from './js/utils/NonogramValidator.js';
+
+        async function validatePuzzles() {
+            const validator = new NonogramValidator();
+            const resultsDiv = document.getElementById('results');
+
+            try {
+                const response = await fetch('./puzzles/puzzles.json');
+                const data = await response.json();
+
+                let html = '<h2>Validating ' + data.puzzles.length + ' puzzles...</h2>';
+                let validCount = 0;
+                let invalidCount = 0;
+
+                for (const puzzle of data.puzzles) {
+                    const result = validator.validate(puzzle.solution);
+                    const statusClass = result.valid ? 'valid' : 'invalid';
+                    const statusText = result.valid ? 'VALID' : 'INVALID';
+
+                    if (result.valid) validCount++;
+                    else invalidCount++;
+
+                    html += `
+                        <div class="puzzle-result">
+                            <strong>${puzzle.name}</strong> (${puzzle.id}) - ${puzzle.width}x${puzzle.height}<br>
+                            Status: <span class="${statusClass}">${statusText}</span><br>
+                            ${result.message}
+                        </div>
+                    `;
+                }
+
+                html = `
+                    <h2>Results: <span class="valid">${validCount} valid</span>, <span class="invalid">${invalidCount} invalid</span></h2>
+                ` + html;
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                resultsDiv.innerHTML = '<span class="invalid">Error: ' + error.message + '</span>';
+            }
+        }
+
+        validatePuzzles();
+    </script>
+</body>
+</html>
