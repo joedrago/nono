@@ -7,22 +7,31 @@ import { GameScene } from "./scenes/GameScene.js"
 import { VictoryScene } from "./scenes/VictoryScene.js"
 import { AchievementsScene } from "./scenes/AchievementsScene.js"
 import { ThemeSelectScene } from "./scenes/ThemeSelectScene.js"
+import { OverlayScene } from "./scenes/OverlayScene.js"
+import { RemoteControl } from "./utils/RemoteControl.js"
 
 const params = new URLSearchParams(window.location.search)
 const offline = params.get("offline") === "true"
 
 let socket = null
+let remoteControl = null
+
 if (offline) {
     console.log("Running in offline mode")
 } else {
     socket = io()
     socket.on("connect", () => {
         console.log("Connected to server:", socket.id)
+        // Create RemoteControl only after successful connection
+        if (!remoteControl) {
+            remoteControl = new RemoteControl(socket)
+            window.nonoRemoteControl = remoteControl
+        }
     })
 }
 
 window.nonoSocket = socket
-export { socket }
+export { socket, remoteControl }
 
 const config = {
     type: Phaser.AUTO,
@@ -47,7 +56,8 @@ const config = {
         GameScene,
         VictoryScene,
         AchievementsScene,
-        ThemeSelectScene
+        ThemeSelectScene,
+        OverlayScene
     ]
 }
 

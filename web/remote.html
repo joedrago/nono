@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nono Remote</title>
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+        }
+        .game-id {
+            font-size: 4rem;
+            letter-spacing: 0.5rem;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+        input[type="text"] {
+            font-family: monospace;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3rem;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            width: 8rem;
+            background-color: #2a2a4e;
+            border: 2px solid #4a4a6e;
+            color: #ffffff;
+        }
+        input[type="text"]::placeholder {
+            color: #666;
+        }
+        button {
+            font-family: monospace;
+            font-size: 1rem;
+            padding: 0.5rem 2rem;
+            background-color: #4a4a6e;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #5a5a8e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="content"></div>
+    </div>
+    <script src="/remote.js"></script>
+</body>
+</html>

@@ -66,6 +66,10 @@ export class BootScene extends Phaser.Scene {
             SaveManager.setTotalPuzzleCount(puzzlesData.puzzles.length)
         }
 
+        // Launch the overlay scene to persist across all other scenes
+        this.scene.launch("OverlayScene")
+        this.scene.bringToTop("OverlayScene")
+
         // Short delay then transition to profile select
         this.time.delayedCall(100, () => {
             this.scene.start("ProfileSelectScene")
