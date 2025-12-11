@@ -112,6 +112,7 @@
                 ArrowRight: "right",
                 Enter: "a",
                 Backspace: "b",
+                KeyX: "x",
                 Escape: "start",
                 KeyY: "select"
             }
@@ -140,6 +141,7 @@
                 right: false,
                 a: false,
                 b: false,
+                x: false,
                 start: false,
                 select: false
             }
@@ -209,6 +211,16 @@
                     } else if (!bButton && gamepadHeld.b) {
                         gamepadHeld.b = false
                         socket.emit("action", { key: "b", state: "released" })
+                    }
+
+                    // X button (index 2 on standard gamepads) - same as B
+                    const xButton = pad.buttons[2] && pad.buttons[2].pressed
+                    if (xButton && !gamepadHeld.x) {
+                        gamepadHeld.x = true
+                        socket.emit("action", { key: "x", state: "pressed" })
+                    } else if (!xButton && gamepadHeld.x) {
+                        gamepadHeld.x = false
+                        socket.emit("action", { key: "x", state: "released" })
                     }
 
                     // Start button (index 9 on standard gamepads)

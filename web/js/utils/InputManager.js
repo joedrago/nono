@@ -257,6 +257,7 @@ export class InputManager {
             case "a":
                 return "accept"
             case "b":
+            case "x":
                 return "back"
             case "start":
                 return "start"
@@ -280,7 +281,8 @@ export class InputManager {
             case "Enter":
                 return "accept" // A button
             case "Backspace":
-                return "back" // B button
+            case "KeyX":
+                return "back" // B button / X button
             case "Escape":
                 return "start" // Start button
             case "KeyY":
@@ -363,9 +365,11 @@ export class InputManager {
                 this.emit("acceptUp", virtualIndex)
             }
 
-            // B button (index 1 on standard gamepads) - Back/Mark X
+            // B button (index 1) or X button (index 2) on standard gamepads - Back/Mark X
             const bButton = pad.buttons[1] && pad.buttons[1].pressed
-            if (bButton) {
+            const xButton = pad.buttons[2] && pad.buttons[2].pressed
+            const backPressed = bButton || xButton
+            if (backPressed) {
                 if (!held.back) {
                     held.back = true
                     this.emit("backDown", virtualIndex)
