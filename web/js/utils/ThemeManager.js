@@ -133,7 +133,7 @@ export const THEMES = {
             puzzleBorder: 0xffffff,
 
             // UI elements
-            selectionIndicator: 0x43b047, // Luigi green
+            selectionIndicator: 0xffffff, // White for contrast on sky blue
             achievementIndicator: 0xfbd000, // Coin gold
             confirmBorder: 0xe52521,
             progressBar: 0x43b047, // Green
