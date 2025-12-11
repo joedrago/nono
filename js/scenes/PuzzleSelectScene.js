@@ -18,20 +18,18 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         this.difficulties = ["easy", "medium", "hard"]
         this.difficultyLabels = { easy: "Easy (5x5)", medium: "Medium (10x10)", hard: "Hard (15x15)" }
-        this.currentDifficulty = 0
-        this.currentPage = 0
-        this.puzzlesPerPage = 6
-        this.gridCols = 3
 
-        this.selectedIndex = 0 // Index within current page
+        this.gridRows = 2
+        this.selectedIndex = 0
+        this.scrollOffset = 0 // How many columns scrolled to the right
 
-        // Get puzzles from registry
+        // Get puzzles from registry and sort them
         this.allPuzzles = this.registry.get("puzzles") || []
+        this.sortPuzzles()
 
         if (this.infiniteMode) {
             this.createInfiniteUI()
         } else {
-            this.filterPuzzles()
             this.createUI()
         }
 
@@ -39,13 +37,14 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.scale.on("resize", () => this.handleResize())
     }
 
-    filterPuzzles() {
-        const difficulty = this.difficulties[this.currentDifficulty]
-        this.filteredPuzzles = this.allPuzzles.filter((p) => p.difficulty === difficulty)
-        this.totalPages = Math.ceil(this.filteredPuzzles.length / this.puzzlesPerPage)
-        if (this.currentPage >= this.totalPages) {
-            this.currentPage = Math.max(0, this.totalPages - 1)
-        }
+    sortPuzzles() {
+        // Sort by difficulty (easy, medium, hard), then by name
+        const difficultyOrder = { easy: 0, medium: 1, hard: 2 }
+        this.sortedPuzzles = [...this.allPuzzles].sort((a, b) => {
+            const diffCompare = difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]
+            if (diffCompare !== 0) return diffCompare
+            return a.name.localeCompare(b.name)
+        })
     }
 
     createUI() {
@@ -60,39 +59,24 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.title.setOrigin(0.5)
         this.uiContainer.add(this.title)
 
-        // Difficulty tabs
-        this.createDifficultyTabs()
+        // Calculate grid dimensions
+        this.cellSize = this.uiScale.percent(18)
+        this.cellSpacing = this.uiScale.percent(3)
+        this.visibleCols = Math.floor((this.uiScale.width * 0.85) / (this.cellSize + this.cellSpacing))
+        this.totalCols = Math.ceil(this.sortedPuzzles.length / this.gridRows)
 
-        // Puzzle grid
+        // Create puzzle grid
         this.createPuzzleGrid()
 
-        // Page indicator
-        if (this.totalPages > 1) {
-            this.pageText = this.add.text(
-                this.uiScale.centerX,
-                this.uiScale.percent(82),
-                `Page ${this.currentPage + 1}/${this.totalPages}`,
-                {
-                    fontFamily: "monospace",
-                    fontSize: this.uiScale.fontSize.small + "px",
-                    color: "#888888"
-                }
-            )
-            this.pageText.setOrigin(0.5)
-            this.uiContainer.add(this.pageText)
-        }
+        // Scroll indicator
+        this.updateScrollIndicator()
 
         // Instructions
-        this.instructions = this.add.text(
-            this.uiScale.centerX,
-            this.uiScale.percent(90),
-            "[A] Select   [B] Back   [L/R] Change Difficulty",
-            {
-                fontFamily: "monospace",
-                fontSize: this.uiScale.fontSize.small + "px",
-                color: "#8888aa"
-            }
-        )
+        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[A] Select   [B] Back", {
+            fontFamily: "monospace",
+            fontSize: this.uiScale.fontSize.small + "px",
+            color: "#8888aa"
+        })
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
     }
@@ -177,65 +161,34 @@ export class PuzzleSelectScene extends Phaser.Scene {
         })
     }
 
-    createDifficultyTabs() {
-        const tabContainer = this.add.container(this.uiScale.centerX, this.uiScale.percent(18))
-        this.uiContainer.add(tabContainer)
-
-        this.diffTabs = []
-        const tabWidth = this.uiScale.percent(25)
-        const totalWidth = tabWidth * 3 + this.uiScale.percent(2) * 2
-        const startX = -totalWidth / 2 + tabWidth / 2
-
-        this.difficulties.forEach((diff, i) => {
-            const x = startX + i * (tabWidth + this.uiScale.percent(2))
-
-            const tab = this.add.container(x, 0)
-
-            const bg = this.add.graphics()
-            const isSelected = i === this.currentDifficulty
-            bg.fillStyle(isSelected ? 0x4444aa : 0x222244, 1)
-            bg.fillRoundedRect(-tabWidth / 2, -this.uiScale.percent(3), tabWidth, this.uiScale.percent(6), 4)
-            tab.add(bg)
-
-            const label = this.add.text(0, 0, this.difficultyLabels[diff], {
-                fontFamily: "monospace",
-                fontSize: this.uiScale.fontSize.small + "px",
-                color: isSelected ? "#ffffff" : "#888888"
-            })
-            label.setOrigin(0.5)
-            tab.add(label)
-
-            this.diffTabs.push({ container: tab, bg, label })
-            tabContainer.add(tab)
-        })
-    }
-
     createPuzzleGrid() {
-        const gridContainer = this.add.container(this.uiScale.centerX, this.uiScale.percent(50))
-        this.uiContainer.add(gridContainer)
-
-        const cellSize = this.uiScale.percent(18)
-        const spacing = this.uiScale.percent(3)
-        const gridWidth = this.gridCols * cellSize + (this.gridCols - 1) * spacing
-        const gridRows = Math.ceil(this.puzzlesPerPage / this.gridCols)
+        this.gridContainer = this.add.container(this.uiScale.centerX, this.uiScale.percent(50))
+        this.uiContainer.add(this.gridContainer)
 
         this.puzzleItems = []
 
-        const startIndex = this.currentPage * this.puzzlesPerPage
-        const endIndex = Math.min(startIndex + this.puzzlesPerPage, this.filteredPuzzles.length)
+        // Calculate visible range
+        const startCol = this.scrollOffset
+        const endCol = Math.min(startCol + this.visibleCols, this.totalCols)
 
-        for (let i = startIndex; i < endIndex; i++) {
-            const puzzle = this.filteredPuzzles[i]
-            const localIndex = i - startIndex
-            const col = localIndex % this.gridCols
-            const row = Math.floor(localIndex / this.gridCols)
+        const gridWidth = this.visibleCols * (this.cellSize + this.cellSpacing) - this.cellSpacing
+        const gridHeight = this.gridRows * (this.cellSize + this.cellSpacing) - this.cellSpacing
 
-            const x = -gridWidth / 2 + col * (cellSize + spacing) + cellSize / 2
-            const y = -((gridRows - 1) * (cellSize + spacing)) / 2 + row * (cellSize + spacing)
+        for (let col = startCol; col < endCol; col++) {
+            for (let row = 0; row < this.gridRows; row++) {
+                const puzzleIndex = col * this.gridRows + row
+                if (puzzleIndex >= this.sortedPuzzles.length) continue
 
-            const item = this.createPuzzleItem(puzzle, x, y, cellSize, localIndex)
-            this.puzzleItems.push(item)
-            gridContainer.add(item.container)
+                const puzzle = this.sortedPuzzles[puzzleIndex]
+                const visualCol = col - startCol
+
+                const x = -gridWidth / 2 + visualCol * (this.cellSize + this.cellSpacing) + this.cellSize / 2
+                const y = -gridHeight / 2 + row * (this.cellSize + this.cellSpacing) + this.cellSize / 2
+
+                const item = this.createPuzzleItem(puzzle, x, y, this.cellSize, puzzleIndex)
+                this.puzzleItems.push(item)
+                this.gridContainer.add(item.container)
+            }
         }
 
         this.updateGridSelection()
@@ -244,15 +197,25 @@ export class PuzzleSelectScene extends Phaser.Scene {
     createPuzzleItem(puzzle, x, y, size, index) {
         const container = this.add.container(x, y)
 
-        // Background
+        // Background - color based on difficulty
         const bg = this.add.graphics()
         const completed = this.saveManager.isPuzzleCompleted(puzzle.id)
-        bg.fillStyle(completed ? 0x225522 : 0x333355, 0.9)
+        let bgColor = 0x333355
+        if (completed) {
+            bgColor = 0x225522
+        } else if (puzzle.difficulty === "easy") {
+            bgColor = 0x333366
+        } else if (puzzle.difficulty === "medium") {
+            bgColor = 0x444455
+        } else if (puzzle.difficulty === "hard") {
+            bgColor = 0x553344
+        }
+        bg.fillStyle(bgColor, 0.9)
         bg.fillRoundedRect(-size / 2, -size / 2, size, size, 6)
         container.add(bg)
 
         // Puzzle name
-        const name = this.add.text(0, -size / 4, puzzle.name, {
+        const name = this.add.text(0, -size / 6, puzzle.name, {
             fontFamily: "monospace",
             fontSize: this.uiScale.fontSize.small + "px",
             color: "#e0e0ff"
@@ -261,7 +224,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
         container.add(name)
 
         // Size indicator
-        const sizeText = this.add.text(0, size / 4, `${puzzle.width}x${puzzle.height}`, {
+        const sizeText = this.add.text(0, size / 6, `${puzzle.width}x${puzzle.height}`, {
             fontFamily: "monospace",
             fontSize: this.uiScale.fontSize.tiny + "px",
             color: "#888888"
@@ -291,20 +254,39 @@ export class PuzzleSelectScene extends Phaser.Scene {
     }
 
     updateGridSelection() {
-        this.puzzleItems.forEach((item, i) => {
-            item.indicator.setVisible(i === this.selectedIndex)
+        this.puzzleItems.forEach((item) => {
+            item.indicator.setVisible(item.index === this.selectedIndex)
         })
     }
 
-    updateDifficultyTabs() {
-        this.diffTabs.forEach((tab, i) => {
-            const isSelected = i === this.currentDifficulty
-            tab.bg.clear()
-            tab.bg.fillStyle(isSelected ? 0x4444aa : 0x222244, 1)
-            const tabWidth = this.uiScale.percent(25)
-            tab.bg.fillRoundedRect(-tabWidth / 2, -this.uiScale.percent(3), tabWidth, this.uiScale.percent(6), 4)
-            tab.label.setColor(isSelected ? "#ffffff" : "#888888")
-        })
+    updateScrollIndicator() {
+        // Remove old indicators
+        if (this.leftArrow) this.leftArrow.destroy()
+        if (this.rightArrow) this.rightArrow.destroy()
+
+        const arrowY = this.uiScale.percent(50)
+
+        // Left arrow if we can scroll left
+        if (this.scrollOffset > 0) {
+            this.leftArrow = this.add.text(this.uiScale.percent(3), arrowY, "◀", {
+                fontFamily: "monospace",
+                fontSize: this.uiScale.fontSize.large + "px",
+                color: "#8888aa"
+            })
+            this.leftArrow.setOrigin(0.5)
+            this.uiContainer.add(this.leftArrow)
+        }
+
+        // Right arrow if we can scroll right
+        if (this.scrollOffset + this.visibleCols < this.totalCols) {
+            this.rightArrow = this.add.text(this.uiScale.width - this.uiScale.percent(3), arrowY, "▶", {
+                fontFamily: "monospace",
+                fontSize: this.uiScale.fontSize.large + "px",
+                color: "#8888aa"
+            })
+            this.rightArrow.setOrigin(0.5)
+            this.uiContainer.add(this.rightArrow)
+        }
     }
 
     setupInput() {
@@ -314,17 +296,22 @@ export class PuzzleSelectScene extends Phaser.Scene {
         }
 
         this.input_manager.on("up", () => {
-            const newIndex = this.selectedIndex - this.gridCols
-            if (newIndex >= 0) {
-                this.selectedIndex = newIndex
+            const currentCol = Math.floor(this.selectedIndex / this.gridRows)
+            const currentRow = this.selectedIndex % this.gridRows
+
+            if (currentRow > 0) {
+                this.selectedIndex--
                 this.updateGridSelection()
                 this.playSound("navigate")
             }
         })
 
         this.input_manager.on("down", () => {
-            const newIndex = this.selectedIndex + this.gridCols
-            if (newIndex < this.puzzleItems.length) {
+            const currentCol = Math.floor(this.selectedIndex / this.gridRows)
+            const currentRow = this.selectedIndex % this.gridRows
+
+            const newIndex = this.selectedIndex + 1
+            if (currentRow < this.gridRows - 1 && newIndex < this.sortedPuzzles.length) {
                 this.selectedIndex = newIndex
                 this.updateGridSelection()
                 this.playSound("navigate")
@@ -332,40 +319,44 @@ export class PuzzleSelectScene extends Phaser.Scene {
         })
 
         this.input_manager.on("left", () => {
-            if (this.selectedIndex % this.gridCols > 0) {
-                this.selectedIndex--
-                this.updateGridSelection()
-                this.playSound("navigate")
-            } else if (this.currentDifficulty > 0) {
-                // Change difficulty left
-                this.currentDifficulty--
-                this.currentPage = 0
-                this.selectedIndex = 0
-                this.filterPuzzles()
-                this.refreshUI()
+            const currentCol = Math.floor(this.selectedIndex / this.gridRows)
+            const currentRow = this.selectedIndex % this.gridRows
+
+            if (currentCol > 0) {
+                this.selectedIndex -= this.gridRows
+                // Check if we need to scroll
+                if (currentCol <= this.scrollOffset) {
+                    this.scrollOffset = Math.max(0, this.scrollOffset - 1)
+                    this.refreshGrid()
+                } else {
+                    this.updateGridSelection()
+                }
                 this.playSound("navigate")
             }
         })
 
         this.input_manager.on("right", () => {
-            if (this.selectedIndex % this.gridCols < this.gridCols - 1 && this.selectedIndex < this.puzzleItems.length - 1) {
-                this.selectedIndex++
-                this.updateGridSelection()
-                this.playSound("navigate")
-            } else if (this.currentDifficulty < this.difficulties.length - 1) {
-                // Change difficulty right
-                this.currentDifficulty++
-                this.currentPage = 0
-                this.selectedIndex = 0
-                this.filterPuzzles()
-                this.refreshUI()
+            const currentCol = Math.floor(this.selectedIndex / this.gridRows)
+            const currentRow = this.selectedIndex % this.gridRows
+
+            const newIndex = this.selectedIndex + this.gridRows
+            if (currentCol < this.totalCols - 1 && newIndex < this.sortedPuzzles.length) {
+                this.selectedIndex = newIndex
+                // Check if we need to scroll
+                const newCol = Math.floor(this.selectedIndex / this.gridRows)
+                if (newCol >= this.scrollOffset + this.visibleCols) {
+                    this.scrollOffset++
+                    this.refreshGrid()
+                } else {
+                    this.updateGridSelection()
+                }
                 this.playSound("navigate")
             }
         })
 
         this.input_manager.on("accept", () => {
-            if (this.puzzleItems.length > 0 && this.puzzleItems[this.selectedIndex]) {
-                const puzzle = this.puzzleItems[this.selectedIndex].puzzle
+            if (this.sortedPuzzles.length > 0 && this.selectedIndex < this.sortedPuzzles.length) {
+                const puzzle = this.sortedPuzzles[this.selectedIndex]
                 this.playSound("select")
                 this.scene.start("GameScene", { puzzle })
             }
@@ -392,7 +383,6 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         this.input_manager.on("accept", () => {
             this.playSound("select")
-            // Generate infinite puzzle based on selected difficulty
             const difficulty = this.difficulties[this.selectedIndex]
             this.scene.start("GameScene", { infinite: true, difficulty })
         })
@@ -401,6 +391,17 @@ export class PuzzleSelectScene extends Phaser.Scene {
             this.playSound("navigate")
             this.scene.start("MainMenuScene")
         })
+    }
+
+    refreshGrid() {
+        // Remove old grid
+        this.gridContainer.destroy()
+        if (this.leftArrow) this.leftArrow.destroy()
+        if (this.rightArrow) this.rightArrow.destroy()
+
+        // Recreate grid with new scroll position
+        this.createPuzzleGrid()
+        this.updateScrollIndicator()
     }
 
     refreshUI() {
