@@ -56,7 +56,8 @@ export class SaveManager {
                 hard: 0
             },
             showErrors: false,
-            dimHints: true
+            dimHints: true,
+            theme: "classic"
         }
     }
 
@@ -255,5 +256,18 @@ export class SaveManager {
         const current = this.getDimHints()
         this.setDimHints(!current)
         return !current
+    }
+
+    // Get theme setting (defaults to "classic")
+    getTheme() {
+        const slotData = this.getCurrentSlotData()
+        return slotData.theme || "classic"
+    }
+
+    // Set theme setting
+    setTheme(themeId) {
+        const slotData = this.getCurrentSlotData()
+        slotData.theme = themeId
+        this.saveCurrentSlotData(slotData)
     }
 }

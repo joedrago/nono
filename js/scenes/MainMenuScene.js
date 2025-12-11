@@ -12,7 +12,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
 
-        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Change Profile"]
+        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Themes", "Change Profile"]
         this.selectedIndex = 0
 
         this.createUI()
@@ -55,8 +55,8 @@ export class MainMenuScene extends Phaser.Scene {
 
         // Menu items
         this.menuButtons = []
-        const menuStartY = this.uiScale.percent(45)
-        const menuSpacing = this.uiScale.percent(12)
+        const menuStartY = this.uiScale.percent(40)
+        const menuSpacing = this.uiScale.percent(9)
 
         this.menuItems.forEach((item, i) => {
             const btn = this.createMenuItem(item, menuStartY + i * menuSpacing)
@@ -90,7 +90,7 @@ export class MainMenuScene extends Phaser.Scene {
         const container = this.add.container(this.uiScale.centerX, y)
 
         const width = this.uiScale.percent(45)
-        const height = this.uiScale.percent(9)
+        const height = this.uiScale.percent(7)
 
         // Background
         const bg = this.add.graphics()
@@ -148,7 +148,10 @@ export class MainMenuScene extends Phaser.Scene {
                 case 2: // Achievements
                     this.scene.start("AchievementsScene")
                     break
-                case 3: // Change Profile
+                case 3: // Themes
+                    this.scene.start("ThemeSelectScene")
+                    break
+                case 4: // Change Profile
                     this.scene.start("ProfileSelectScene")
                     break
             }
