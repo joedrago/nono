@@ -11,7 +11,8 @@
       "Bash(open index.html)",
       "Bash(npm run lint)",
       "Bash(mkdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(npm run build:puzzles:*)"
     ]
   },
   "sandbox": {
