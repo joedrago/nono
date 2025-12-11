@@ -82,7 +82,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.uiContainer.add(this.profileText)
 
         // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Select   [B] Back", {
+        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Select", {
             fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
             color: theme.text.instructions
@@ -168,10 +168,6 @@ export class MainMenuScene extends Phaser.Scene {
             }
         })
 
-        this.inputManager.on("back", () => {
-            this.playSound("navigate")
-            this.scene.start("ProfileSelectScene")
-        })
     }
 
     handleResize() {
