@@ -3,9 +3,11 @@
     "version": "1.0.0",
     "description": "A retro-styled nonogram puzzle game built with Phaser 3, controlled via gamepad",
     "scripts": {
-        "format": "prettier --write \"js/**/*.js\""
+        "format": "prettier --write \"js/**/*.js\"",
+        "lint": "eslint js --ignore-pattern js/lib/"
     },
     "devDependencies": {
+        "eslint": "^9.39.1",
         "phaser": "^3.70.0",
         "prettier": "^3.1.0"
     },

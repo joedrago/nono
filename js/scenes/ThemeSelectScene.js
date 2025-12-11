@@ -1,7 +1,7 @@
 import { InputManager } from "../utils/InputManager.js"
 import { UIScale } from "../utils/UIScale.js"
 import { SaveManager } from "../utils/SaveManager.js"
-import { ThemeManager, THEMES } from "../utils/ThemeManager.js"
+import { ThemeManager } from "../utils/ThemeManager.js"
 
 export class ThemeSelectScene extends Phaser.Scene {
     constructor() {
@@ -65,7 +65,6 @@ export class ThemeSelectScene extends Phaser.Scene {
         this.listContainer = this.add.container(this.uiScale.centerX, this.uiScale.percent(50))
         this.uiContainer.add(this.listContainer)
 
-        const theme = this.themeManager.getTheme()
         const itemWidth = this.uiScale.percent(60)
         const itemHeight = this.uiScale.percent(14)
         const spacing = this.uiScale.percent(4)

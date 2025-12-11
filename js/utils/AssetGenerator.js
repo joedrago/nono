@@ -148,7 +148,7 @@ export class AssetGenerator {
                 buffer: buffer,
                 duration: duration
             })
-        } catch (e) {
+        } catch (_e) {
             console.log("Could not generate sound:", key)
         }
     }
@@ -180,7 +180,7 @@ export class AssetGenerator {
                 buffer: buffer,
                 duration: duration
             })
-        } catch (e) {
+        } catch (_e) {
             console.log("Could not generate victory sound")
         }
     }

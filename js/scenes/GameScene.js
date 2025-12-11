@@ -428,7 +428,7 @@ export class GameScene extends Phaser.Scene {
         }
         this.cursorGraphics = []
 
-        this.cursors.forEach((cursor, gamepadIndex) => {
+        this.cursors.forEach((cursor, _gamepadIndex) => {
             const g = this.add.graphics()
             const x = this.gridOffsetX + cursor.x * this.cellSize
             const y = this.gridOffsetY + cursor.y * this.cellSize
@@ -442,7 +442,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     updateCursor(gamepadIndex) {
-        const cursor = this.getCursor(gamepadIndex)
+        this.getCursor(gamepadIndex) // Ensure cursor exists
         this.drawCursors()
     }
 
@@ -570,7 +570,7 @@ export class GameScene extends Phaser.Scene {
         })
 
         // Handle accept for pause menu selection
-        this.inputManager.on("accept", (gamepadIndex) => {
+        this.inputManager.on("accept", (_gamepadIndex) => {
             if (this.paused) {
                 this.handlePauseSelection()
             }
@@ -605,7 +605,7 @@ export class GameScene extends Phaser.Scene {
         })
 
         // Handle back for pause menu
-        this.inputManager.on("back", (gamepadIndex) => {
+        this.inputManager.on("back", (_gamepadIndex) => {
             if (this.paused) {
                 this.hidePauseMenu()
                 this.playSound("navigate")

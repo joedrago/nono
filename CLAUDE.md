@@ -50,6 +50,17 @@ Settings (in package.json):
 - trailingComma: "none"
 - semi: false
 
+### Linting
+Run ESLint on all edited files after making changes:
+```bash
+npm run lint
+```
+
+- Fix any errors before committing
+- Unused variables must be prefixed with underscore (e.g., `_gamepadIndex`)
+- Phaser is defined as a global in eslint.config.mjs
+- The js/lib/ directory is excluded from linting
+
 ### Scene Lifecycle
 Each scene follows this pattern:
 1. `init(data)` - Receive data from previous scene
@@ -60,7 +71,7 @@ Each scene follows this pattern:
 
 ### Input Handling Pattern
 ```javascript
-this.input_manager.on("accept", (gamepadIndex) => {
+this.inputManager.on("accept", (gamepadIndex) => {
     // Handle accept action
     // gamepadIndex is -1 for keyboard, 0+ for gamepads
 })
@@ -125,5 +136,6 @@ npm run format
 
 - **phaser**: Game engine (loaded locally from js/lib/)
 - **prettier**: Code formatting (dev)
+- **eslint**: Linting (dev)
 - All future puzzles added to puzzles.json must be considered valid by the NonogramValidator class.
 - When requesting to open something in a browser, assume that a local dev server at http://localhost:8080 is already running in the repository root
