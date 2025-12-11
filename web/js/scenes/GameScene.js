@@ -431,14 +431,15 @@ export class GameScene extends Phaser.Scene {
         } else if (state === this.MARKED) {
             graphics.fillStyle(theme.graphics.cellEmpty, 1)
             graphics.fillRect(screenX + padding, screenY + padding, size, size)
-            // Draw X - use error color if marked but should be filled
+            // Draw X centered at 50% of cell size - use error color if marked but should be filled
             const isMarkedError = errorsVisible && this.puzzle.solution[gridY][gridX] === 1
             const markerColor = isMarkedError ? theme.graphics.cellMarkerError : theme.graphics.cellMarker
-            graphics.lineStyle(2, markerColor, 1)
-            graphics.moveTo(screenX + padding + 4, screenY + padding + 4)
-            graphics.lineTo(screenX + padding + size - 4, screenY + padding + size - 4)
-            graphics.moveTo(screenX + padding + size - 4, screenY + padding + 4)
-            graphics.lineTo(screenX + padding + 4, screenY + padding + size - 4)
+            const xInset = size * 0.25 // 25% inset from each edge leaves 50% in the middle
+            graphics.lineStyle(3, markerColor, 1)
+            graphics.moveTo(screenX + padding + xInset, screenY + padding + xInset)
+            graphics.lineTo(screenX + padding + size - xInset, screenY + padding + size - xInset)
+            graphics.moveTo(screenX + padding + size - xInset, screenY + padding + xInset)
+            graphics.lineTo(screenX + padding + xInset, screenY + padding + size - xInset)
             graphics.strokePath()
         }
     }

@@ -52,8 +52,8 @@ export const THEMES = {
             // Cell states
             cellFilled: 0x4488ff,
             cellError: 0xff4444,
-            cellMarker: 0x555566,
-            cellMarkerError: 0xff4444,
+            cellMarker: 0x7777aa,
+            cellMarkerError: 0xff6666,
 
             // Grid
             gridLine: 0x666688,
@@ -124,8 +124,8 @@ export const THEMES = {
             // Cell states
             cellFilled: 0xe52521, // Mario red
             cellError: 0x000000, // Black (pit/death)
-            cellMarker: 0x5c3c0d, // Brick brown (darker)
-            cellMarkerError: 0xff0000, // Bright red
+            cellMarker: 0x8b6914, // Brick brown (brighter)
+            cellMarkerError: 0xff4444, // Bright red
 
             // Grid
             gridLine: 0xfbd000, // Gold
