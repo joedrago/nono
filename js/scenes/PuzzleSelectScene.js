@@ -312,34 +312,62 @@ export class PuzzleSelectScene extends Phaser.Scene {
             const currentCol = Math.floor(this.selectedIndex / this.gridRows)
             const currentRow = this.selectedIndex % this.gridRows
 
-            if (currentRow > 0) {
-                this.selectedIndex--
-                this.updateGridSelection()
-                this.playSound("navigate")
+            // Wrap within the current column
+            let newRow = (currentRow - 1 + this.gridRows) % this.gridRows
+            let newIndex = currentCol * this.gridRows + newRow
+
+            // If wrapping would go past the end of puzzles, stay at top of column
+            if (newIndex >= this.sortedPuzzles.length) {
+                newRow = 0
+                newIndex = currentCol * this.gridRows + newRow
             }
+
+            this.selectedIndex = newIndex
+            this.updateGridSelection()
+            this.playSound("navigate")
         })
 
         this.inputManager.on("down", () => {
             const currentCol = Math.floor(this.selectedIndex / this.gridRows)
             const currentRow = this.selectedIndex % this.gridRows
 
-            const newIndex = this.selectedIndex + 1
-            if (currentRow < this.gridRows - 1 && newIndex < this.sortedPuzzles.length) {
-                this.selectedIndex = newIndex
-                this.updateGridSelection()
-                this.playSound("navigate")
+            // Wrap within the current column
+            let newRow = (currentRow + 1) % this.gridRows
+            let newIndex = currentCol * this.gridRows + newRow
+
+            // If wrapping would go past the end of puzzles, wrap to top of column
+            if (newIndex >= this.sortedPuzzles.length) {
+                newRow = 0
+                newIndex = currentCol * this.gridRows + newRow
             }
+
+            this.selectedIndex = newIndex
+            this.updateGridSelection()
+            this.playSound("navigate")
         })
 
         this.inputManager.on("left", () => {
             const currentCol = Math.floor(this.selectedIndex / this.gridRows)
             const currentRow = this.selectedIndex % this.gridRows
 
-            if (currentCol > 0) {
-                this.selectedIndex -= this.gridRows
-                // Check if we need to scroll
-                if (currentCol <= this.scrollOffset) {
-                    this.scrollOffset = Math.max(0, this.scrollOffset - 1)
+            // Wrap horizontally
+            let newCol = (currentCol - 1 + this.totalCols) % this.totalCols
+            let newIndex = newCol * this.gridRows + currentRow
+
+            // If the new position doesn't exist, find the last valid column for this row
+            while (newIndex >= this.sortedPuzzles.length && newCol > 0) {
+                newCol--
+                newIndex = newCol * this.gridRows + currentRow
+            }
+
+            if (newIndex < this.sortedPuzzles.length) {
+                this.selectedIndex = newIndex
+                // Adjust scroll if needed
+                if (newCol < this.scrollOffset) {
+                    this.scrollOffset = newCol
+                    this.refreshGrid()
+                } else if (newCol >= this.scrollOffset + this.visibleCols) {
+                    this.scrollOffset = Math.max(0, newCol - this.visibleCols + 1)
                     this.refreshGrid()
                 } else {
                     this.updateGridSelection()
@@ -352,13 +380,24 @@ export class PuzzleSelectScene extends Phaser.Scene {
             const currentCol = Math.floor(this.selectedIndex / this.gridRows)
             const currentRow = this.selectedIndex % this.gridRows
 
-            const newIndex = this.selectedIndex + this.gridRows
-            if (currentCol < this.totalCols - 1 && newIndex < this.sortedPuzzles.length) {
+            // Wrap horizontally
+            let newCol = (currentCol + 1) % this.totalCols
+            let newIndex = newCol * this.gridRows + currentRow
+
+            // If the new position doesn't exist, wrap to first column
+            if (newIndex >= this.sortedPuzzles.length) {
+                newCol = 0
+                newIndex = newCol * this.gridRows + currentRow
+            }
+
+            if (newIndex < this.sortedPuzzles.length) {
                 this.selectedIndex = newIndex
-                // Check if we need to scroll
-                const newCol = Math.floor(this.selectedIndex / this.gridRows)
-                if (newCol >= this.scrollOffset + this.visibleCols) {
-                    this.scrollOffset++
+                // Adjust scroll if needed
+                if (newCol < this.scrollOffset) {
+                    this.scrollOffset = newCol
+                    this.refreshGrid()
+                } else if (newCol >= this.scrollOffset + this.visibleCols) {
+                    this.scrollOffset = Math.max(0, newCol - this.visibleCols + 1)
                     this.refreshGrid()
                 } else {
                     this.updateGridSelection()
@@ -383,13 +422,13 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
     setupInfiniteInput() {
         this.inputManager.on("up", () => {
-            this.selectedIndex = Math.max(0, this.selectedIndex - 1)
+            this.selectedIndex = (this.selectedIndex - 1 + this.difficulties.length) % this.difficulties.length
             this.updateInfiniteSelection()
             this.playSound("navigate")
         })
 
         this.inputManager.on("down", () => {
-            this.selectedIndex = Math.min(this.difficulties.length - 1, this.selectedIndex + 1)
+            this.selectedIndex = (this.selectedIndex + 1) % this.difficulties.length
             this.updateInfiniteSelection()
             this.playSound("navigate")
         })
