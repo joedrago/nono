@@ -1,8 +1,12 @@
 (function () {
-    // Prevent all default touch behavior on the document to stop double-tap zoom
-    document.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false })
-    document.addEventListener("touchend", (e) => e.preventDefault(), { passive: false })
-    document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false })
+    // Prevent default touch behavior to stop double-tap zoom, but allow form elements to work
+    const shouldPreventDefault = (e) => {
+        const tag = e.target.tagName
+        return tag !== "INPUT" && tag !== "BUTTON" && tag !== "TEXTAREA" && tag !== "SELECT"
+    }
+    document.addEventListener("touchstart", (e) => shouldPreventDefault(e) && e.preventDefault(), { passive: false })
+    document.addEventListener("touchend", (e) => shouldPreventDefault(e) && e.preventDefault(), { passive: false })
+    document.addEventListener("touchmove", (e) => shouldPreventDefault(e) && e.preventDefault(), { passive: false })
 
     const contentEl = document.getElementById("content")
     const path = window.location.pathname
