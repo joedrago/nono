@@ -55,7 +55,8 @@ export class SaveManager {
                 medium: 0,
                 hard: 0
             },
-            showErrors: true
+            showErrors: false,
+            dimHints: true
         }
     }
 
@@ -233,6 +234,26 @@ export class SaveManager {
     toggleShowErrors() {
         const current = this.getShowErrors()
         this.setShowErrors(!current)
+        return !current
+    }
+
+    // Get dim hints setting (defaults to true)
+    getDimHints() {
+        const slotData = this.getCurrentSlotData()
+        return slotData.dimHints !== false
+    }
+
+    // Set dim hints setting
+    setDimHints(value) {
+        const slotData = this.getCurrentSlotData()
+        slotData.dimHints = value
+        this.saveCurrentSlotData(slotData)
+    }
+
+    // Toggle dim hints setting
+    toggleDimHints() {
+        const current = this.getDimHints()
+        this.setDimHints(!current)
         return !current
     }
 }

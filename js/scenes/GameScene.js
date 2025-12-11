@@ -27,8 +27,9 @@ export class GameScene extends Phaser.Scene {
         this.paused = false
         this.pauseIndex = 0
 
-        // Load show errors setting from profile
+        // Load settings from profile
         this.showErrors = this.saveManager.getShowErrors()
+        this.dimHints = this.saveManager.getDimHints()
 
         // Track drag state per gamepad for hold-to-fill behavior
         // Maps gamepadIndex -> { sourceState, targetState }
@@ -256,6 +257,49 @@ export class GameScene extends Phaser.Scene {
         this.uiContainer.add(this.instructions)
     }
 
+    // Check if a row's hints appear to be satisfied by current player grid
+    isRowHintComplete(rowIndex) {
+        const playerRuns = this.getRunsFromLine(this.playerGrid[rowIndex])
+        const hints = this.rowHints[rowIndex]
+        return this.runsMatchHints(playerRuns, hints)
+    }
+
+    // Check if a column's hints appear to be satisfied by current player grid
+    isColHintComplete(colIndex) {
+        const colData = []
+        for (let y = 0; y < this.puzzle.height; y++) {
+            colData.push(this.playerGrid[y][colIndex])
+        }
+        const playerRuns = this.getRunsFromLine(colData)
+        const hints = this.colHints[colIndex]
+        return this.runsMatchHints(playerRuns, hints)
+    }
+
+    // Get runs of filled cells from a line
+    getRunsFromLine(line) {
+        const runs = []
+        let count = 0
+        for (const cell of line) {
+            if (cell === this.FILLED) {
+                count++
+            } else if (count > 0) {
+                runs.push(count)
+                count = 0
+            }
+        }
+        if (count > 0) runs.push(count)
+        return runs.length > 0 ? runs : [0]
+    }
+
+    // Check if player runs match the hints exactly
+    runsMatchHints(runs, hints) {
+        if (runs.length !== hints.length) return false
+        for (let i = 0; i < runs.length; i++) {
+            if (runs[i] !== hints[i]) return false
+        }
+        return true
+    }
+
     drawRowHints() {
         this.rowHintTexts = []
 
@@ -263,11 +307,12 @@ export class GameScene extends Phaser.Scene {
             const hints = this.rowHints[y]
             const hintStr = hints.join(" ")
             const yPos = this.gridOffsetY + y * this.cellSize + this.cellSize / 2
+            const isComplete = this.dimHints && this.isRowHintComplete(y)
 
             const text = this.add.text(this.gridOffsetX - this.uiScale.percent(2), yPos, hintStr, {
                 fontFamily: "monospace",
                 fontSize: this.cellSize * 0.5 + "px",
-                color: "#ccccff"
+                color: isComplete ? "#666688" : "#ccccff"
             })
             text.setOrigin(1, 0.5)
             this.uiContainer.add(text)
@@ -282,11 +327,12 @@ export class GameScene extends Phaser.Scene {
             const hints = this.colHints[x]
             const hintStr = hints.join("\n")
             const xPos = this.gridOffsetX + x * this.cellSize + this.cellSize / 2
+            const isComplete = this.dimHints && this.isColHintComplete(x)
 
             const text = this.add.text(xPos, this.gridOffsetY - this.uiScale.percent(2), hintStr, {
                 fontFamily: "monospace",
                 fontSize: this.cellSize * 0.5 + "px",
-                color: "#ccccff",
+                color: isComplete ? "#666688" : "#ccccff",
                 align: "center"
             })
             text.setOrigin(0.5, 1)
@@ -404,6 +450,23 @@ export class GameScene extends Phaser.Scene {
         const cellX = this.gridOffsetX + x * this.cellSize
         const cellY = this.gridOffsetY + y * this.cellSize
         this.drawCell(this.cellGraphics[y][x], cellX, cellY, this.playerGrid[y][x], x, y)
+        this.updateHintColors()
+    }
+
+    updateHintColors() {
+        if (!this.dimHints) return
+
+        // Update row hints
+        for (let y = 0; y < this.puzzle.height; y++) {
+            const isComplete = this.isRowHintComplete(y)
+            this.rowHintTexts[y].setColor(isComplete ? "#666688" : "#ccccff")
+        }
+
+        // Update column hints
+        for (let x = 0; x < this.puzzle.width; x++) {
+            const isComplete = this.isColHintComplete(x)
+            this.colHintTexts[x].setColor(isComplete ? "#666688" : "#ccccff")
+        }
     }
 
     setupInput() {
@@ -568,7 +631,7 @@ export class GameScene extends Phaser.Scene {
         this.pauseOverlay.fillRect(0, 0, this.uiScale.width, this.uiScale.height)
 
         const boxWidth = this.uiScale.percent(50)
-        const boxHeight = this.uiScale.percent(42)
+        const boxHeight = this.uiScale.percent(48)
 
         this.pauseBox = this.add.graphics()
         this.pauseBox.fillStyle(0x333355, 1)
@@ -587,7 +650,13 @@ export class GameScene extends Phaser.Scene {
         })
         this.pauseTitle.setOrigin(0.5)
 
-        this.pauseItems = ["Resume", "Show Errors: " + (this.showErrors ? "ON" : "OFF"), "Restart", "Exit"]
+        this.pauseItems = [
+            "Resume",
+            "Show Errors: " + (this.showErrors ? "ON" : "OFF"),
+            "Dim Hints: " + (this.dimHints ? "ON" : "OFF"),
+            "Restart",
+            "Exit"
+        ]
         this.pauseTexts = []
         const startY = this.uiScale.centerY - this.uiScale.percent(4)
         const spacing = this.uiScale.percent(6)
@@ -609,9 +678,12 @@ export class GameScene extends Phaser.Scene {
         this.pauseTexts.forEach((text, i) => {
             text.setColor(i === this.pauseIndex ? "#00ff00" : "#aaaacc")
         })
-        // Update the show errors text
+        // Update the toggle texts
         if (this.pauseTexts[1]) {
             this.pauseTexts[1].setText("Show Errors: " + (this.showErrors ? "ON" : "OFF"))
+        }
+        if (this.pauseTexts[2]) {
+            this.pauseTexts[2].setText("Dim Hints: " + (this.dimHints ? "ON" : "OFF"))
         }
     }
 
@@ -633,10 +705,23 @@ export class GameScene extends Phaser.Scene {
                 break
             case 1: // Toggle Show Errors
                 this.showErrors = this.saveManager.toggleShowErrors()
-                this.updatePauseMenu()
+                // Hide and re-show pause menu to refresh it along with the grid
+                this.hidePauseMenu()
                 this.refreshUI()
+                this.showPauseMenu()
+                this.pauseIndex = 1 // Stay on the same menu item
+                this.updatePauseMenu()
                 break
-            case 2: // Restart
+            case 2: // Toggle Dim Hints
+                this.dimHints = this.saveManager.toggleDimHints()
+                // Hide and re-show pause menu to refresh it along with the hints
+                this.hidePauseMenu()
+                this.refreshUI()
+                this.showPauseMenu()
+                this.pauseIndex = 2 // Stay on the same menu item
+                this.updatePauseMenu()
+                break
+            case 3: // Restart
                 this.playerGrid = Array(this.puzzle.height)
                     .fill(null)
                     .map(() => Array(this.puzzle.width).fill(this.EMPTY))
@@ -644,7 +729,7 @@ export class GameScene extends Phaser.Scene {
                 this.hidePauseMenu()
                 this.refreshUI()
                 break
-            case 3: // Exit
+            case 4: // Exit
                 this.scene.start("PuzzleSelectScene", { infinite: this.infiniteMode })
                 break
         }
