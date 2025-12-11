@@ -22,11 +22,8 @@ export class InputManager {
         this.activeScene = null
         this.listeners = new Map() // event -> callbacks (per-scene storage)
 
-        this.lastInputTime = new Map() // Debounce per virtual gamepad
-        this.debounceTime = 150 // ms between inputs
-
-        // Track held button state per virtual gamepad (for drag-to-fill)
-        this.heldButtons = new Map() // virtualIndex -> { accept: bool, back: bool }
+        // Track held button state per virtual gamepad (prevents auto-repeat)
+        this.heldButtons = new Map() // virtualIndex -> { up, down, left, right, accept, back, start, delete }
 
         // Virtual gamepad registry - maps virtual index to source info
         // Virtual indices are assigned continuously as input sources are discovered
@@ -144,19 +141,16 @@ export class InputManager {
 
             // Lazily initialize keyboard as a virtual gamepad on first input
             const virtualIndex = this.getKeyboardVirtualIndex()
+            const held = this.getHeldState(virtualIndex)
 
-            // Handle hold buttons (accept/back) specially
-            if (action === "accept" || action === "back") {
-                const held = this.getHeldState(virtualIndex)
-                if (!held[action]) {
-                    held[action] = true
+            // Only emit if not already held (prevents auto-repeat)
+            if (!held[action]) {
+                held[action] = true
+                // Emit down event for accept/back (used for drag-to-fill)
+                if (action === "accept" || action === "back") {
                     this.emit(action + "Down", virtualIndex)
-                    this.emit(action, virtualIndex)
-                    this.setInputTime(virtualIndex, action)
                 }
-            } else if (this.canInput(virtualIndex, action)) {
                 this.emit(action, virtualIndex)
-                this.setInputTime(virtualIndex, action)
             }
         })
 
@@ -169,11 +163,11 @@ export class InputManager {
             // Only process if keyboard has been initialized
             if (this.keyboardVirtualIndex === null) return
 
-            // Handle hold button release
-            if (action === "accept" || action === "back") {
-                const held = this.getHeldState(this.keyboardVirtualIndex)
-                if (held[action]) {
-                    held[action] = false
+            const held = this.getHeldState(this.keyboardVirtualIndex)
+            if (held[action]) {
+                held[action] = false
+                // Emit up event for accept/back (used for drag-to-fill)
+                if (action === "accept" || action === "back") {
                     this.emit(action + "Up", this.keyboardVirtualIndex)
                 }
             }
@@ -227,27 +221,23 @@ export class InputManager {
 
         // Lazily initialize remote as a virtual gamepad on first input
         const virtualIndex = this.getRemoteVirtualIndex(remoteIndex)
+        const held = this.getHeldState(virtualIndex)
 
         if (state === "pressed") {
-            // Handle hold buttons (accept/back) specially
-            if (action === "accept" || action === "back") {
-                const held = this.getHeldState(virtualIndex)
-                if (!held[action]) {
-                    held[action] = true
+            // Only emit if not already held (prevents auto-repeat)
+            if (!held[action]) {
+                held[action] = true
+                // Emit down event for accept/back (used for drag-to-fill)
+                if (action === "accept" || action === "back") {
                     this.emit(action + "Down", virtualIndex)
-                    this.emit(action, virtualIndex)
-                    this.setInputTime(virtualIndex, action)
                 }
-            } else if (this.canInput(virtualIndex, action)) {
                 this.emit(action, virtualIndex)
-                this.setInputTime(virtualIndex, action)
             }
         } else if (state === "released") {
-            // Handle hold button release
-            if (action === "accept" || action === "back") {
-                const held = this.getHeldState(virtualIndex)
-                if (held[action]) {
-                    held[action] = false
+            if (held[action]) {
+                held[action] = false
+                // Emit up event for accept/back (used for drag-to-fill)
+                if (action === "accept" || action === "back") {
                     this.emit(action + "Up", virtualIndex)
                 }
             }
@@ -320,21 +310,44 @@ export class InputManager {
             const dpadLeft = (pad.buttons[14] && pad.buttons[14].pressed) || leftStickX < -0.5
             const dpadRight = (pad.buttons[15] && pad.buttons[15].pressed) || leftStickX > 0.5
 
-            if (dpadUp && this.canInput(virtualIndex, "up")) {
-                this.emit("up", virtualIndex)
-                this.setInputTime(virtualIndex, "up")
+            // D-pad up
+            if (dpadUp) {
+                if (!held.up) {
+                    held.up = true
+                    this.emit("up", virtualIndex)
+                }
+            } else {
+                held.up = false
             }
-            if (dpadDown && this.canInput(virtualIndex, "down")) {
-                this.emit("down", virtualIndex)
-                this.setInputTime(virtualIndex, "down")
+
+            // D-pad down
+            if (dpadDown) {
+                if (!held.down) {
+                    held.down = true
+                    this.emit("down", virtualIndex)
+                }
+            } else {
+                held.down = false
             }
-            if (dpadLeft && this.canInput(virtualIndex, "left")) {
-                this.emit("left", virtualIndex)
-                this.setInputTime(virtualIndex, "left")
+
+            // D-pad left
+            if (dpadLeft) {
+                if (!held.left) {
+                    held.left = true
+                    this.emit("left", virtualIndex)
+                }
+            } else {
+                held.left = false
             }
-            if (dpadRight && this.canInput(virtualIndex, "right")) {
-                this.emit("right", virtualIndex)
-                this.setInputTime(virtualIndex, "right")
+
+            // D-pad right
+            if (dpadRight) {
+                if (!held.right) {
+                    held.right = true
+                    this.emit("right", virtualIndex)
+                }
+            } else {
+                held.right = false
             }
 
             // A button (index 0 on standard gamepads) - Accept/Fill
@@ -344,7 +357,6 @@ export class InputManager {
                     held.accept = true
                     this.emit("acceptDown", virtualIndex)
                     this.emit("accept", virtualIndex)
-                    this.setInputTime(virtualIndex, "accept")
                 }
             } else if (held.accept) {
                 held.accept = false
@@ -358,7 +370,6 @@ export class InputManager {
                     held.back = true
                     this.emit("backDown", virtualIndex)
                     this.emit("back", virtualIndex)
-                    this.setInputTime(virtualIndex, "back")
                 }
             } else if (held.back) {
                 held.back = false
@@ -366,35 +377,41 @@ export class InputManager {
             }
 
             // Start button (index 9 on standard gamepads) - Menu
-            const startButton = pad.buttons[9]
-            if (startButton && startButton.pressed && this.canInput(virtualIndex, "start")) {
-                this.emit("start", virtualIndex)
-                this.setInputTime(virtualIndex, "start")
+            const startButton = pad.buttons[9] && pad.buttons[9].pressed
+            if (startButton) {
+                if (!held.start) {
+                    held.start = true
+                    this.emit("start", virtualIndex)
+                }
+            } else {
+                held.start = false
             }
 
             // Y button (index 3 on standard gamepads) - Delete
             const yButton = pad.buttons[3] && pad.buttons[3].pressed
-            if (yButton && this.canInput(virtualIndex, "delete")) {
-                this.emit("delete", virtualIndex)
-                this.setInputTime(virtualIndex, "delete")
+            if (yButton) {
+                if (!held.delete) {
+                    held.delete = true
+                    this.emit("delete", virtualIndex)
+                }
+            } else {
+                held.delete = false
             }
         }
     }
 
-    canInput(virtualIndex, button = "any") {
-        const key = `${virtualIndex}-${button}`
-        const lastTime = this.lastInputTime.get(key) || 0
-        return Date.now() - lastTime > this.debounceTime
-    }
-
-    setInputTime(virtualIndex, button) {
-        const key = `${virtualIndex}-${button}`
-        this.lastInputTime.set(key, Date.now())
-    }
-
     getHeldState(virtualIndex) {
         if (!this.heldButtons.has(virtualIndex)) {
-            this.heldButtons.set(virtualIndex, { accept: false, back: false })
+            this.heldButtons.set(virtualIndex, {
+                up: false,
+                down: false,
+                left: false,
+                right: false,
+                accept: false,
+                back: false,
+                start: false,
+                delete: false
+            })
         }
         return this.heldButtons.get(virtualIndex)
     }
