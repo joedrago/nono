@@ -27,6 +27,9 @@ export class GameScene extends Phaser.Scene {
         this.paused = false
         this.pauseIndex = 0
 
+        // Load show errors setting from profile
+        this.showErrors = this.saveManager.getShowErrors()
+
         // Track drag state per gamepad for hold-to-fill behavior
         // Maps gamepadIndex -> { sourceState, targetState }
         this.dragState = new Map()
@@ -302,7 +305,7 @@ export class GameScene extends Phaser.Scene {
                 const cellY = this.gridOffsetY + y * this.cellSize
 
                 const cell = this.add.graphics()
-                this.drawCell(cell, cellX, cellY, this.playerGrid[y][x])
+                this.drawCell(cell, cellX, cellY, this.playerGrid[y][x], x, y)
                 this.uiContainer.add(cell)
                 row.push(cell)
             }
@@ -344,27 +347,31 @@ export class GameScene extends Phaser.Scene {
         this.uiContainer.add(this.gridLines)
     }
 
-    drawCell(graphics, x, y, state) {
+    drawCell(graphics, screenX, screenY, state, gridX, gridY) {
         graphics.clear()
 
         const padding = 2
         const size = this.cellSize - padding * 2
 
+        // Check if this is an error (filled but shouldn't be)
+        const isError = this.showErrors && state === this.FILLED && this.puzzle.solution[gridY][gridX] === 0
+
         if (state === this.EMPTY) {
             graphics.fillStyle(0x222244, 1)
-            graphics.fillRect(x + padding, y + padding, size, size)
+            graphics.fillRect(screenX + padding, screenY + padding, size, size)
         } else if (state === this.FILLED) {
-            graphics.fillStyle(0x4488ff, 1)
-            graphics.fillRect(x + padding, y + padding, size, size)
+            // Show errors in red/orange, correct fills in blue
+            graphics.fillStyle(isError ? 0xff4444 : 0x4488ff, 1)
+            graphics.fillRect(screenX + padding, screenY + padding, size, size)
         } else if (state === this.MARKED) {
             graphics.fillStyle(0x222244, 1)
-            graphics.fillRect(x + padding, y + padding, size, size)
+            graphics.fillRect(screenX + padding, screenY + padding, size, size)
             // Draw X
             graphics.lineStyle(2, 0xff6666, 1)
-            graphics.moveTo(x + padding + 4, y + padding + 4)
-            graphics.lineTo(x + padding + size - 4, y + padding + size - 4)
-            graphics.moveTo(x + padding + size - 4, y + padding + 4)
-            graphics.lineTo(x + padding + 4, y + padding + size - 4)
+            graphics.moveTo(screenX + padding + 4, screenY + padding + 4)
+            graphics.lineTo(screenX + padding + size - 4, screenY + padding + size - 4)
+            graphics.moveTo(screenX + padding + size - 4, screenY + padding + 4)
+            graphics.lineTo(screenX + padding + 4, screenY + padding + size - 4)
             graphics.strokePath()
         }
     }
@@ -396,7 +403,7 @@ export class GameScene extends Phaser.Scene {
     updateCell(x, y) {
         const cellX = this.gridOffsetX + x * this.cellSize
         const cellY = this.gridOffsetY + y * this.cellSize
-        this.drawCell(this.cellGraphics[y][x], cellX, cellY, this.playerGrid[y][x])
+        this.drawCell(this.cellGraphics[y][x], cellX, cellY, this.playerGrid[y][x], x, y)
     }
 
     setupInput() {
@@ -561,7 +568,7 @@ export class GameScene extends Phaser.Scene {
         this.pauseOverlay.fillRect(0, 0, this.uiScale.width, this.uiScale.height)
 
         const boxWidth = this.uiScale.percent(50)
-        const boxHeight = this.uiScale.percent(35)
+        const boxHeight = this.uiScale.percent(42)
 
         this.pauseBox = this.add.graphics()
         this.pauseBox.fillStyle(0x333355, 1)
@@ -580,9 +587,9 @@ export class GameScene extends Phaser.Scene {
         })
         this.pauseTitle.setOrigin(0.5)
 
-        this.pauseItems = ["Resume", "Restart", "Exit"]
+        this.pauseItems = ["Resume", "Show Errors: " + (this.showErrors ? "ON" : "OFF"), "Restart", "Exit"]
         this.pauseTexts = []
-        const startY = this.uiScale.centerY - this.uiScale.percent(2)
+        const startY = this.uiScale.centerY - this.uiScale.percent(4)
         const spacing = this.uiScale.percent(6)
 
         this.pauseItems.forEach((item, i) => {
@@ -602,6 +609,10 @@ export class GameScene extends Phaser.Scene {
         this.pauseTexts.forEach((text, i) => {
             text.setColor(i === this.pauseIndex ? "#00ff00" : "#aaaacc")
         })
+        // Update the show errors text
+        if (this.pauseTexts[1]) {
+            this.pauseTexts[1].setText("Show Errors: " + (this.showErrors ? "ON" : "OFF"))
+        }
     }
 
     hidePauseMenu() {
@@ -620,7 +631,12 @@ export class GameScene extends Phaser.Scene {
             case 0: // Resume
                 this.hidePauseMenu()
                 break
-            case 1: // Restart
+            case 1: // Toggle Show Errors
+                this.showErrors = this.saveManager.toggleShowErrors()
+                this.updatePauseMenu()
+                this.refreshUI()
+                break
+            case 2: // Restart
                 this.playerGrid = Array(this.puzzle.height)
                     .fill(null)
                     .map(() => Array(this.puzzle.width).fill(this.EMPTY))
@@ -628,7 +644,7 @@ export class GameScene extends Phaser.Scene {
                 this.hidePauseMenu()
                 this.refreshUI()
                 break
-            case 2: // Exit
+            case 3: // Exit
                 this.scene.start("PuzzleSelectScene", { infinite: this.infiniteMode })
                 break
         }

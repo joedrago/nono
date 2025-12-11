@@ -54,7 +54,8 @@ export class SaveManager {
                 easy: 0,
                 medium: 0,
                 hard: 0
-            }
+            },
+            showErrors: true
         }
     }
 
@@ -213,5 +214,25 @@ export class SaveManager {
     getCompletedPuzzles() {
         const slotData = this.getCurrentSlotData()
         return slotData.completedPuzzles || []
+    }
+
+    // Get show errors setting (defaults to true)
+    getShowErrors() {
+        const slotData = this.getCurrentSlotData()
+        return slotData.showErrors !== false
+    }
+
+    // Set show errors setting
+    setShowErrors(value) {
+        const slotData = this.getCurrentSlotData()
+        slotData.showErrors = value
+        this.saveCurrentSlotData(slotData)
+    }
+
+    // Toggle show errors setting
+    toggleShowErrors() {
+        const current = this.getShowErrors()
+        this.setShowErrors(!current)
+        return !current
     }
 }
