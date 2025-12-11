@@ -1,0 +1,14 @@
+{
+    "id": "easy_035",
+    "name": "Bubble Bobble",
+    "difficulty": "easy",
+    "width": 5,
+    "height": 5,
+    "solution": [
+        [0, 1, 1, 1, 0],
+        [1, 0, 1, 0, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 0, 1, 0]
+    ]
+}

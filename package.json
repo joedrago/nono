@@ -1,13 +1,24 @@
 {
     "name": "nono",
+    "author": "Joe Drago <joedrago@gmail.com>",
     "version": "1.0.0",
     "description": "A retro-styled nonogram puzzle game built with Phaser 3, controlled via gamepad",
+    "main": "electron/main.js",
     "scripts": {
         "start": "node server.js",
         "format": "prettier --write \"web/js/**/*.js\"",
-        "lint": "eslint web/js --ignore-pattern web/js/lib/"
+        "lint": "eslint web/js --ignore-pattern web/js/lib/",
+        "electron": "electron electron/main.js",
+        "make": "electron-forge make",
+        "build:puzzles": "node scripts/build-puzzles.js"
     },
     "devDependencies": {
+        "@electron-forge/cli": "^7.10.2",
+        "@electron-forge/maker-deb": "^7.10.2",
+        "@electron-forge/maker-rpm": "^7.10.2",
+        "@electron-forge/maker-squirrel": "^7.10.2",
+        "@electron-forge/maker-zip": "^7.10.2",
+        "electron": "^39.2.6",
         "eslint": "^9.39.1",
         "phaser": "^3.70.0",
         "prettier": "^3.1.0"
