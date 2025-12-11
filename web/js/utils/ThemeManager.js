@@ -162,7 +162,7 @@ export const THEMES = {
             secondary: "#b0b0b0", // Medium gray
             muted: "#606060", // Dark gray
             instructions: "#808080", // Gray
-            success: "#a0a0a0", // Gray (no green in vampire theme)
+            success: "#cc0000", // Dark red for menu selection (no green in vampire theme)
             victory: "#c0c0c0", // Silver
             warning: "#ff4444", // Bright red for warnings
             accent: "#8b0000", // Dark blood red
