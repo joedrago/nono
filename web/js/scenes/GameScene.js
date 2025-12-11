@@ -196,12 +196,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     initCursors() {
-        // Initialize cursor at center of grid for keyboard (gamepad -1)
-        this.cursors.set(-1, {
-            x: Math.floor(this.puzzle.width / 2),
-            y: Math.floor(this.puzzle.height / 2),
-            color: this.themeManager.getCursorColor(-1)
-        })
+        // Cursors are now lazily initialized when input is received
+        // No need to pre-create the keyboard cursor since all input sources
+        // are treated as virtual gamepads with continuous indices
     }
 
     getCursor(gamepadIndex) {

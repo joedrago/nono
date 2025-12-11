@@ -1,45 +1,124 @@
-// Unified input manager for gamepad and keyboard
-// Supports multiple gamepads with individual cursors
+// Unified input manager for gamepad, keyboard, and remote controls
+// All input sources are treated as virtual gamepads with continuous indices
+
+// Virtual gamepad types
+const GAMEPAD_TYPE = {
+    PHYSICAL: "physical",
+    KEYBOARD: "keyboard",
+    REMOTE: "remote"
+}
+
+// Global state for remote control - persists across InputManager instances
+// This ensures only one socket listener exists and routes to the active InputManager
+const remoteState = {
+    activeManager: null,
+    listenerRegistered: false,
+    remoteToVirtual: new Map(), // Persists remote registrations across scenes
+    nextRemoteVirtualBase: 1000 // Start remote indices high to avoid conflicts
+}
 
 export class InputManager {
     constructor(scene) {
         this.scene = scene
-        this.cursors = new Map() // gamepadIndex -> cursor data
         this.listeners = new Map() // event -> callbacks
-        this.lastInputTime = new Map() // Debounce per gamepad
+        this.lastInputTime = new Map() // Debounce per virtual gamepad
         this.debounceTime = 150 // ms between inputs
 
-        // Cursor colors for multi-gamepad support
-        this.cursorColors = [0x00ff00, 0xff00ff, 0x00ffff, 0xffff00, 0xff8800, 0x8800ff, 0x00ff88, 0xff0088]
+        // Track held button state per virtual gamepad (for drag-to-fill)
+        this.heldButtons = new Map() // virtualIndex -> { accept: bool, back: bool }
 
-        // Track keyboard state for debouncing
-        this.keyStates = {}
+        // Virtual gamepad registry - maps virtual index to source info
+        // Virtual indices are assigned continuously as input sources are discovered
+        this.virtualGamepads = new Map() // virtualIndex -> { type, sourceId }
 
-        // Track held button state per gamepad (for drag-to-fill)
-        this.heldButtons = new Map() // gamepadIndex -> { accept: bool, back: bool }
+        // Reverse lookups for each source type
+        this.physicalToVirtual = new Map() // physical gamepad index -> virtual index
+        this.keyboardVirtualIndex = null // virtual index for keyboard (lazy init)
+
+        // Next available virtual index
+        this.nextVirtualIndex = 0
 
         this.setupKeyboard()
         this.setupGamepad()
+        this.setupRemote()
+    }
+
+    // Register a new virtual gamepad and return its index
+    registerVirtualGamepad(type, sourceId) {
+        const virtualIndex = this.nextVirtualIndex++
+        this.virtualGamepads.set(virtualIndex, { type, sourceId })
+        console.log(`Virtual gamepad ${virtualIndex} registered: ${type} (source: ${sourceId})`)
+        this.emit("gamepadConnected", virtualIndex)
+        return virtualIndex
+    }
+
+    // Unregister a virtual gamepad
+    unregisterVirtualGamepad(virtualIndex) {
+        const info = this.virtualGamepads.get(virtualIndex)
+        if (info) {
+            console.log(`Virtual gamepad ${virtualIndex} unregistered: ${info.type}`)
+            this.virtualGamepads.delete(virtualIndex)
+            this.heldButtons.delete(virtualIndex)
+            this.emit("gamepadDisconnected", virtualIndex)
+        }
+    }
+
+    // Get virtual index for keyboard (lazy initialization)
+    getKeyboardVirtualIndex() {
+        if (this.keyboardVirtualIndex === null) {
+            this.keyboardVirtualIndex = this.registerVirtualGamepad(GAMEPAD_TYPE.KEYBOARD, "keyboard")
+        }
+        return this.keyboardVirtualIndex
+    }
+
+    // Get virtual index for a physical gamepad
+    getPhysicalVirtualIndex(physicalIndex) {
+        if (!this.physicalToVirtual.has(physicalIndex)) {
+            const virtualIndex = this.registerVirtualGamepad(GAMEPAD_TYPE.PHYSICAL, physicalIndex)
+            this.physicalToVirtual.set(physicalIndex, virtualIndex)
+        }
+        return this.physicalToVirtual.get(physicalIndex)
+    }
+
+    // Get virtual index for a remote control (uses global state to persist across scenes)
+    getRemoteVirtualIndex(remoteIndex) {
+        // Check global state first - remote may already be registered from previous scene
+        if (!remoteState.remoteToVirtual.has(remoteIndex)) {
+            const virtualIndex = remoteState.nextRemoteVirtualBase++
+            remoteState.remoteToVirtual.set(remoteIndex, virtualIndex)
+            console.log(`Remote ${remoteIndex} assigned virtual index ${virtualIndex}`)
+        }
+        const virtualIndex = remoteState.remoteToVirtual.get(remoteIndex)
+
+        // Register in this InputManager's local registry if not already
+        if (!this.virtualGamepads.has(virtualIndex)) {
+            this.virtualGamepads.set(virtualIndex, { type: GAMEPAD_TYPE.REMOTE, sourceId: remoteIndex })
+            this.emit("gamepadConnected", virtualIndex)
+        }
+
+        return virtualIndex
     }
 
     setupKeyboard() {
-        // Keyboard acts as gamepad index -1 (virtual gamepad)
         this.scene.input.keyboard.on("keydown", (event) => {
             const action = this.keyToAction(event.code)
             if (!action) return
 
+            // Lazily initialize keyboard as a virtual gamepad on first input
+            const virtualIndex = this.getKeyboardVirtualIndex()
+
             // Handle hold buttons (accept/back) specially
             if (action === "accept" || action === "back") {
-                const held = this.getHeldState(-1)
+                const held = this.getHeldState(virtualIndex)
                 if (!held[action]) {
                     held[action] = true
-                    this.emit(action + "Down", -1)
-                    this.emit(action, -1)
-                    this.lastInputTime.set(-1, Date.now())
+                    this.emit(action + "Down", virtualIndex)
+                    this.emit(action, virtualIndex)
+                    this.setInputTime(virtualIndex, action)
                 }
-            } else if (this.canInput(-1)) {
-                this.emit(action, -1)
-                this.lastInputTime.set(-1, Date.now())
+            } else if (this.canInput(virtualIndex, action)) {
+                this.emit(action, virtualIndex)
+                this.setInputTime(virtualIndex, action)
             }
         })
 
@@ -47,12 +126,15 @@ export class InputManager {
             const action = this.keyToAction(event.code)
             if (!action) return
 
+            // Only process if keyboard has been initialized
+            if (this.keyboardVirtualIndex === null) return
+
             // Handle hold button release
             if (action === "accept" || action === "back") {
-                const held = this.getHeldState(-1)
+                const held = this.getHeldState(this.keyboardVirtualIndex)
                 if (held[action]) {
                     held[action] = false
-                    this.emit(action + "Up", -1)
+                    this.emit(action + "Up", this.keyboardVirtualIndex)
                 }
             }
         })
@@ -62,22 +144,104 @@ export class InputManager {
         // Poll gamepads in update loop
         this.scene.events.on("update", () => this.pollGamepads())
 
-        // Handle gamepad connection
+        // Handle gamepad connection - register as virtual gamepad
         this.scene.input.gamepad.on("connected", (pad) => {
-            console.log(`Gamepad ${pad.index} connected: ${pad.id}`)
-            this.initCursor(pad.index)
+            console.log(`Physical gamepad ${pad.index} connected: ${pad.id}`)
+            this.getPhysicalVirtualIndex(pad.index)
         })
 
         this.scene.input.gamepad.on("disconnected", (pad) => {
-            console.log(`Gamepad ${pad.index} disconnected`)
-            this.removeCursor(pad.index)
+            console.log(`Physical gamepad ${pad.index} disconnected`)
+            const virtualIndex = this.physicalToVirtual.get(pad.index)
+            if (virtualIndex !== undefined) {
+                this.unregisterVirtualGamepad(virtualIndex)
+                this.physicalToVirtual.delete(pad.index)
+            }
         })
 
         // Initialize already connected gamepads
         if (this.scene.input.gamepad.total > 0) {
             this.scene.input.gamepad.gamepads.forEach((pad) => {
-                if (pad) this.initCursor(pad.index)
+                if (pad) this.getPhysicalVirtualIndex(pad.index)
             })
+        }
+    }
+
+    setupRemote() {
+        const socket = window.nonoSocket
+        if (!socket) return
+
+        // Set this as the active manager to receive remote events
+        remoteState.activeManager = this
+
+        // Only register the global socket listener once
+        if (!remoteState.listenerRegistered) {
+            remoteState.listenerRegistered = true
+
+            socket.on("action", (data) => {
+                // Route to whichever InputManager is currently active
+                const manager = remoteState.activeManager
+                if (!manager) return
+
+                manager.handleRemoteAction(data)
+            })
+        }
+    }
+
+    handleRemoteAction(data) {
+        const { key, state, remoteIndex } = data
+        const action = this.remoteKeyToAction(key)
+        if (!action) return
+
+        // Lazily initialize remote as a virtual gamepad on first input
+        const virtualIndex = this.getRemoteVirtualIndex(remoteIndex)
+
+        if (state === "pressed") {
+            // Handle hold buttons (accept/back) specially
+            if (action === "accept" || action === "back") {
+                const held = this.getHeldState(virtualIndex)
+                if (!held[action]) {
+                    held[action] = true
+                    this.emit(action + "Down", virtualIndex)
+                    this.emit(action, virtualIndex)
+                    this.setInputTime(virtualIndex, action)
+                }
+            } else if (this.canInput(virtualIndex, action)) {
+                this.emit(action, virtualIndex)
+                this.setInputTime(virtualIndex, action)
+            }
+        } else if (state === "released") {
+            // Handle hold button release
+            if (action === "accept" || action === "back") {
+                const held = this.getHeldState(virtualIndex)
+                if (held[action]) {
+                    held[action] = false
+                    this.emit(action + "Up", virtualIndex)
+                }
+            }
+        }
+    }
+
+    remoteKeyToAction(key) {
+        switch (key) {
+            case "up":
+                return "up"
+            case "down":
+                return "down"
+            case "left":
+                return "left"
+            case "right":
+                return "right"
+            case "a":
+                return "accept"
+            case "b":
+                return "back"
+            case "start":
+                return "start"
+            case "select":
+                return "delete"
+            default:
+                return null
         }
     }
 
@@ -111,119 +275,105 @@ export class InputManager {
         gamepads.forEach((pad) => {
             if (!pad) return
 
-            const index = pad.index
-            const held = this.getHeldState(index)
+            // Get virtual index for this physical gamepad
+            const virtualIndex = this.getPhysicalVirtualIndex(pad.index)
+            const held = this.getHeldState(virtualIndex)
 
             // D-pad
-            if (pad.up && this.canInput(index, "up")) {
-                this.emit("up", index)
-                this.setInputTime(index, "up")
+            if (pad.up && this.canInput(virtualIndex, "up")) {
+                this.emit("up", virtualIndex)
+                this.setInputTime(virtualIndex, "up")
             }
-            if (pad.down && this.canInput(index, "down")) {
-                this.emit("down", index)
-                this.setInputTime(index, "down")
+            if (pad.down && this.canInput(virtualIndex, "down")) {
+                this.emit("down", virtualIndex)
+                this.setInputTime(virtualIndex, "down")
             }
-            if (pad.left && this.canInput(index, "left")) {
-                this.emit("left", index)
-                this.setInputTime(index, "left")
+            if (pad.left && this.canInput(virtualIndex, "left")) {
+                this.emit("left", virtualIndex)
+                this.setInputTime(virtualIndex, "left")
             }
-            if (pad.right && this.canInput(index, "right")) {
-                this.emit("right", index)
-                this.setInputTime(index, "right")
+            if (pad.right && this.canInput(virtualIndex, "right")) {
+                this.emit("right", virtualIndex)
+                this.setInputTime(virtualIndex, "right")
             }
 
             // A button (index 0 on most gamepads) - Accept/Fill
             if (pad.A) {
                 if (!held.accept) {
                     held.accept = true
-                    this.emit("acceptDown", index)
-                    this.emit("accept", index)
-                    this.setInputTime(index, "A")
+                    this.emit("acceptDown", virtualIndex)
+                    this.emit("accept", virtualIndex)
+                    this.setInputTime(virtualIndex, "accept")
                 }
             } else if (held.accept) {
                 held.accept = false
-                this.emit("acceptUp", index)
+                this.emit("acceptUp", virtualIndex)
             }
 
             // B button (index 1 on most gamepads) - Back/Mark X
             if (pad.B) {
                 if (!held.back) {
                     held.back = true
-                    this.emit("backDown", index)
-                    this.emit("back", index)
-                    this.setInputTime(index, "B")
+                    this.emit("backDown", virtualIndex)
+                    this.emit("back", virtualIndex)
+                    this.setInputTime(virtualIndex, "back")
                 }
             } else if (held.back) {
                 held.back = false
-                this.emit("backUp", index)
+                this.emit("backUp", virtualIndex)
             }
 
             // Start button (index 9 on standard gamepads) - Menu
             const startButton = pad.buttons[9]
-            if (startButton && startButton.pressed && this.canInput(index, "start")) {
-                this.emit("start", index)
-                this.setInputTime(index, "start")
+            if (startButton && startButton.pressed && this.canInput(virtualIndex, "start")) {
+                this.emit("start", virtualIndex)
+                this.setInputTime(virtualIndex, "start")
             }
 
             // Y button (index 3 on standard gamepads) - Delete
-            if (pad.Y && this.canInput(index, "Y")) {
-                this.emit("delete", index)
-                this.setInputTime(index, "Y")
+            if (pad.Y && this.canInput(virtualIndex, "delete")) {
+                this.emit("delete", virtualIndex)
+                this.setInputTime(virtualIndex, "delete")
             }
         })
     }
 
-    canInput(gamepadIndex, button = "any") {
-        const key = `${gamepadIndex}-${button}`
+    canInput(virtualIndex, button = "any") {
+        const key = `${virtualIndex}-${button}`
         const lastTime = this.lastInputTime.get(key) || 0
         return Date.now() - lastTime > this.debounceTime
     }
 
-    setInputTime(gamepadIndex, button) {
-        const key = `${gamepadIndex}-${button}`
+    setInputTime(virtualIndex, button) {
+        const key = `${virtualIndex}-${button}`
         this.lastInputTime.set(key, Date.now())
     }
 
-    getHeldState(gamepadIndex) {
-        if (!this.heldButtons.has(gamepadIndex)) {
-            this.heldButtons.set(gamepadIndex, { accept: false, back: false })
+    getHeldState(virtualIndex) {
+        if (!this.heldButtons.has(virtualIndex)) {
+            this.heldButtons.set(virtualIndex, { accept: false, back: false })
         }
-        return this.heldButtons.get(gamepadIndex)
+        return this.heldButtons.get(virtualIndex)
     }
 
-    isHeld(gamepadIndex, button) {
-        const held = this.getHeldState(gamepadIndex)
+    isHeld(virtualIndex, button) {
+        const held = this.getHeldState(virtualIndex)
         return held[button] || false
     }
 
-    initCursor(gamepadIndex) {
-        if (!this.cursors.has(gamepadIndex)) {
-            this.cursors.set(gamepadIndex, {
-                index: gamepadIndex,
-                color: this.cursorColors[gamepadIndex % this.cursorColors.length],
-                x: 0,
-                y: 0
-            })
-        }
+    // Get all active virtual gamepad indices
+    getActiveGamepads() {
+        return Array.from(this.virtualGamepads.keys())
     }
 
-    removeCursor(gamepadIndex) {
-        this.cursors.delete(gamepadIndex)
+    // Get info about a virtual gamepad
+    getGamepadInfo(virtualIndex) {
+        return this.virtualGamepads.get(virtualIndex)
     }
 
-    getCursors() {
-        return Array.from(this.cursors.values())
-    }
-
-    getCursorColor(gamepadIndex) {
-        // Keyboard uses first color
-        if (gamepadIndex === -1) return this.cursorColors[0]
-        const cursor = this.cursors.get(gamepadIndex)
-        return cursor ? cursor.color : this.cursorColors[0]
-    }
-
+    // Get count of active virtual gamepads
     getConnectedGamepadCount() {
-        return this.scene.input.gamepad.total
+        return this.virtualGamepads.size
     }
 
     // Event emitter methods
@@ -241,23 +391,31 @@ export class InputManager {
         if (index !== -1) callbacks.splice(index, 1)
     }
 
-    emit(event, gamepadIndex) {
+    emit(event, virtualIndex) {
         const callbacks = this.listeners.get(event)
         if (callbacks) {
-            callbacks.forEach((cb) => cb(gamepadIndex))
+            callbacks.forEach((cb) => cb(virtualIndex))
         }
 
         // Also emit 'any' event for general input handling
         const anyCallbacks = this.listeners.get("any")
         if (anyCallbacks) {
-            anyCallbacks.forEach((cb) => cb(event, gamepadIndex))
+            anyCallbacks.forEach((cb) => cb(event, virtualIndex))
         }
     }
 
     destroy() {
+        // Clear active manager if this is the current one
+        if (remoteState.activeManager === this) {
+            remoteState.activeManager = null
+        }
+
         this.listeners.clear()
-        this.cursors.clear()
+        this.virtualGamepads.clear()
+        this.physicalToVirtual.clear()
         this.lastInputTime.clear()
         this.heldButtons.clear()
+        this.keyboardVirtualIndex = null
+        this.nextVirtualIndex = 0
     }
 }

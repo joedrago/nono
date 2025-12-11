@@ -10,6 +10,8 @@ const io = new Server(httpServer)
 const remoteManager = new RemoteManager()
 
 const PORT = 3080
+const DEBUG = process.argv.includes("--debug")
+const HOST = DEBUG ? "0.0.0.0" : "localhost"
 
 // Parse URL-encoded form data
 app.use(express.urlencoded({ extended: true }))
@@ -50,6 +52,6 @@ io.on("connection", (socket) => {
     })
 })
 
-httpServer.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`)
+httpServer.listen(PORT, HOST, () => {
+    console.log(`Server running at http://${HOST}:${PORT}`)
 })

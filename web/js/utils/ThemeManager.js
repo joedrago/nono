@@ -205,12 +205,10 @@ export class ThemeManager {
         return this.getTheme().cursorColors
     }
 
-    // Get cursor color by gamepad index
-    getCursorColor(gamepadIndex) {
+    // Get cursor color by virtual gamepad index
+    // All indices are now continuous (0, 1, 2, ...) regardless of source type
+    getCursorColor(virtualIndex) {
         const colors = this.cursorColors
-        if (gamepadIndex < 0) {
-            return colors[0] // Keyboard gets first color
-        }
-        return colors[gamepadIndex % colors.length]
+        return colors[virtualIndex % colors.length]
     }
 }
