@@ -421,17 +421,19 @@ export class InputManager {
                 this.markButtonReleased(virtualIndex, "start")
             }
 
-            // Y button (index 3 on standard gamepads) - Delete
+            // Y button (index 3 on standard gamepads) - Peek (show errors while held)
             const yButton = pad.buttons[3] && pad.buttons[3].pressed
             if (yButton) {
-                if (!held.delete) {
-                    held.delete = true
-                    this.markButtonPressed(virtualIndex, "delete")
-                    this.emit("delete", virtualIndex)
+                if (!held.peek) {
+                    held.peek = true
+                    this.markButtonPressed(virtualIndex, "peek")
+                    this.emit("peekDown", virtualIndex)
+                    this.emit("peek", virtualIndex)
                 }
-            } else if (held.delete) {
-                held.delete = false
-                this.markButtonReleased(virtualIndex, "delete")
+            } else if (held.peek) {
+                held.peek = false
+                this.markButtonReleased(virtualIndex, "peek")
+                this.emit("peekUp", virtualIndex)
             }
         }
     }
