@@ -13,7 +13,9 @@ const GAMEPAD_TYPE = {
 const globalState = {
     activeManager: null,
     listenerRegistered: false,
+    gamepadListenerRegistered: false,
     remoteToVirtual: new Map(), // Persists remote registrations across scenes
+    physicalToVirtual: new Map(), // Persists physical gamepad registrations across scenes
     nextVirtualIndex: 0 // Global counter for all virtual gamepad types
 }
 
@@ -31,9 +33,12 @@ export class InputManager {
         // Virtual indices are assigned continuously as input sources are discovered
         this.virtualGamepads = new Map() // virtualIndex -> { type, sourceId }
 
-        // Reverse lookups for each source type
-        this.physicalToVirtual = new Map() // physical gamepad index -> virtual index
-        this.keyboardVirtualIndex = null // virtual index for keyboard (lazy init)
+        // Keyboard virtual index (local to this manager, lazy init)
+        this.keyboardVirtualIndex = null
+
+        // Set this as the active manager before setting up inputs
+        // so that global event handlers route to this instance
+        globalState.activeManager = this
 
         this.setupKeyboard()
         this.setupGamepad()
@@ -68,13 +73,23 @@ export class InputManager {
         return this.keyboardVirtualIndex
     }
 
-    // Get virtual index for a physical gamepad
+    // Get virtual index for a physical gamepad (uses global state to persist across scenes)
     getPhysicalVirtualIndex(physicalIndex) {
-        if (!this.physicalToVirtual.has(physicalIndex)) {
-            const virtualIndex = this.registerVirtualGamepad(GAMEPAD_TYPE.PHYSICAL, physicalIndex)
-            this.physicalToVirtual.set(physicalIndex, virtualIndex)
+        // Check global state first - gamepad may already be registered from previous scene
+        if (!globalState.physicalToVirtual.has(physicalIndex)) {
+            const virtualIndex = globalState.nextVirtualIndex++
+            globalState.physicalToVirtual.set(physicalIndex, virtualIndex)
+            console.log(`Physical gamepad ${physicalIndex} assigned virtual index ${virtualIndex}`)
         }
-        return this.physicalToVirtual.get(physicalIndex)
+        const virtualIndex = globalState.physicalToVirtual.get(physicalIndex)
+
+        // Register in this InputManager's local registry if not already
+        if (!this.virtualGamepads.has(virtualIndex)) {
+            this.virtualGamepads.set(virtualIndex, { type: GAMEPAD_TYPE.PHYSICAL, sourceId: physicalIndex })
+            this.emit("gamepadConnected", virtualIndex)
+        }
+
+        return virtualIndex
     }
 
     // Get virtual index for a remote control (uses global state to persist across scenes)
@@ -141,22 +156,35 @@ export class InputManager {
         // Poll gamepads in update loop
         this.scene.events.on("update", () => this.pollGamepads())
 
-        // Handle gamepad connection - register as virtual gamepad
-        this.scene.input.gamepad.on("connected", (pad) => {
-            console.log(`Physical gamepad ${pad.index} connected: ${pad.id}`)
-            this.getPhysicalVirtualIndex(pad.index)
-        })
+        // Only register global gamepad connection listeners once
+        if (!globalState.gamepadListenerRegistered) {
+            globalState.gamepadListenerRegistered = true
 
-        this.scene.input.gamepad.on("disconnected", (pad) => {
-            console.log(`Physical gamepad ${pad.index} disconnected`)
-            const virtualIndex = this.physicalToVirtual.get(pad.index)
-            if (virtualIndex !== undefined) {
-                this.unregisterVirtualGamepad(virtualIndex)
-                this.physicalToVirtual.delete(pad.index)
-            }
-        })
+            // Handle gamepad connection - register as virtual gamepad
+            this.scene.input.gamepad.on("connected", (pad) => {
+                console.log(`Physical gamepad ${pad.index} connected: ${pad.id}`)
+                // Route to whichever InputManager is currently active
+                const manager = globalState.activeManager
+                if (manager) {
+                    manager.getPhysicalVirtualIndex(pad.index)
+                }
+            })
 
-        // Initialize already connected gamepads
+            this.scene.input.gamepad.on("disconnected", (pad) => {
+                console.log(`Physical gamepad ${pad.index} disconnected`)
+                const virtualIndex = globalState.physicalToVirtual.get(pad.index)
+                if (virtualIndex !== undefined) {
+                    // Route to whichever InputManager is currently active
+                    const manager = globalState.activeManager
+                    if (manager) {
+                        manager.unregisterVirtualGamepad(virtualIndex)
+                    }
+                    globalState.physicalToVirtual.delete(virtualIndex)
+                }
+            })
+        }
+
+        // Initialize already connected gamepads in this manager's local registry
         if (this.scene.input.gamepad.total > 0) {
             this.scene.input.gamepad.gamepads.forEach((pad) => {
                 if (pad) this.getPhysicalVirtualIndex(pad.index)
@@ -167,9 +195,6 @@ export class InputManager {
     setupRemote() {
         const socket = window.nonoSocket
         if (!socket) return
-
-        // Set this as the active manager to receive remote events
-        globalState.activeManager = this
 
         // Only register the global socket listener once
         if (!globalState.listenerRegistered) {
@@ -407,9 +432,9 @@ export class InputManager {
             globalState.activeManager = null
         }
 
+        // Clear local state only - global state persists across scenes
         this.listeners.clear()
         this.virtualGamepads.clear()
-        this.physicalToVirtual.clear()
         this.lastInputTime.clear()
         this.heldButtons.clear()
         this.keyboardVirtualIndex = null
