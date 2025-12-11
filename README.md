@@ -21,11 +21,20 @@ npm install
 
 ## Running the Game
 
+Simply open `index.html` in a web browser. For local development, you may need to use a local server due to CORS restrictions with ES modules:
+
 ```bash
-npm start
+# Using Python
+python3 -m http.server 8000
+
+# Using npx
+npx serve .
+
+# Using PHP
+php -S localhost:8000
 ```
 
-Then open your browser to `http://localhost:3000`
+Then open `http://localhost:8000` in your browser.
 
 ## Controls
 
@@ -50,7 +59,7 @@ Nonograms (also known as Picross or Griddlers) are logic puzzles where you fill 
 
 ## Adding Custom Puzzles
 
-Edit `public/puzzles/puzzles.json` to add new puzzles:
+Edit `puzzles/puzzles.json` to add new puzzles:
 
 ```json
 {
@@ -76,27 +85,29 @@ Edit `public/puzzles/puzzles.json` to add new puzzles:
 
 ```
 nono/
-├── server.js              # Express server
-├── public/
-│   ├── index.html         # Game HTML
-│   ├── css/style.css      # Fullscreen styling
-│   ├── puzzles/
-│   │   └── puzzles.json   # Puzzle definitions
-│   └── js/
-│       ├── main.js        # Phaser game config
-│       ├── scenes/        # Game scenes
-│       │   ├── BootScene.js
-│       │   ├── ProfileSelectScene.js
-│       │   ├── MainMenuScene.js
-│       │   ├── PuzzleSelectScene.js
-│       │   ├── GameScene.js
-│       │   └── VictoryScene.js
-│       └── utils/
-│           ├── InputManager.js   # Gamepad/keyboard handling
-│           ├── UIScale.js        # Responsive scaling
-│           ├── SaveManager.js    # LocalStorage persistence
-│           └── AssetGenerator.js # Programmatic assets
-└── package.json
+├── index.html             # Game HTML entry point
+├── css/style.css          # Fullscreen styling
+├── puzzles/
+│   └── puzzles.json       # Puzzle definitions
+├── js/
+│   ├── main.js            # Phaser game config
+│   ├── lib/
+│   │   └── phaser.min.js  # Phaser library
+│   ├── scenes/            # Game scenes
+│   │   ├── BootScene.js
+│   │   ├── ProfileSelectScene.js
+│   │   ├── MainMenuScene.js
+│   │   ├── PuzzleSelectScene.js
+│   │   ├── GameScene.js
+│   │   └── VictoryScene.js
+│   └── utils/
+│       ├── InputManager.js   # Gamepad/keyboard handling
+│       ├── UIScale.js        # Responsive scaling
+│       ├── SaveManager.js    # LocalStorage persistence
+│       └── AssetGenerator.js # Programmatic assets
+├── package.json
+├── README.md
+└── CLAUDE.md
 ```
 
 ## Development
@@ -112,8 +123,7 @@ npm run format
 - All assets generated programmatically (no external image files needed)
 - Save data stored in browser LocalStorage
 - Responsive UI based on percentage of screen height
-- Server provides puzzle data via `/api/puzzles` endpoint
-- Infinite puzzles generated server-side via `/api/infinite` endpoint
+- Pure static site - no server required
 
 ## License
 

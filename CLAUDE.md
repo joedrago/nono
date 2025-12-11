@@ -4,7 +4,7 @@ This document provides context for AI assistants working on this codebase.
 
 ## Project Overview
 
-Nono is a retro-styled nonogram puzzle game built with Phaser 3. The game is designed for gamepad-first gameplay with keyboard fallback for debugging.
+Nono is a retro-styled nonogram puzzle game built with Phaser 3. The game is designed for gamepad-first gameplay with keyboard fallback for debugging. It's a pure static site with no server required.
 
 ## Key Architecture Decisions
 
@@ -70,24 +70,23 @@ this.input_manager.on("accept", (gamepadIndex) => {
 
 | Purpose | Location |
 |---------|----------|
-| Game entry point | `public/js/main.js` |
-| Scenes | `public/js/scenes/*.js` |
-| Utilities | `public/js/utils/*.js` |
-| Puzzle data | `public/puzzles/puzzles.json` |
-| Server | `server.js` |
-| Phaser library | `public/js/lib/phaser.min.js` |
+| Game entry point | `js/main.js` |
+| Scenes | `js/scenes/*.js` |
+| Utilities | `js/utils/*.js` |
+| Puzzle data | `puzzles/puzzles.json` |
+| Phaser library | `js/lib/phaser.min.js` |
 
 ## Adding New Features
 
 ### Adding a New Puzzle
-1. Edit `public/puzzles/puzzles.json`
+1. Edit `puzzles/puzzles.json`
 2. Add puzzle object with: id, name, difficulty, width, height, solution
 3. Solution is 2D array: 1 = filled, 0 = empty
 
 ### Adding a New Scene
-1. Create file in `public/js/scenes/NewScene.js`
+1. Create file in `js/scenes/NewScene.js`
 2. Import and use InputManager, UIScale, SaveManager as needed
-3. Add scene to imports and config in `public/js/main.js`
+3. Add scene to imports and config in `js/main.js`
 4. Follow existing scene patterns for consistency
 
 ### Modifying Input Handling
@@ -98,9 +97,11 @@ this.input_manager.on("accept", (gamepadIndex) => {
 ## Common Tasks
 
 ### Run the game
+Open `index.html` in a browser. For local development with ES modules, use a local server:
 ```bash
-npm start
-# Open http://localhost:3000
+python3 -m http.server 8000
+# or
+npx serve .
 ```
 
 ### Format code
@@ -120,15 +121,7 @@ npm run format
 - Use keyboard (arrows, Enter, Escape) to test without gamepad
 - LocalStorage data visible in browser DevTools → Application → Local Storage
 
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| GET `/api/puzzles` | Returns all puzzle definitions |
-| GET `/api/infinite?difficulty=easy` | Generates random puzzle |
-
 ## Dependencies
 
 - **phaser**: Game engine (loaded locally from js/lib/)
-- **express**: Static file server and API
 - **prettier**: Code formatting (dev)

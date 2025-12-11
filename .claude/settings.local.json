@@ -6,7 +6,8 @@
       "Bash(npm install:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npm run format:*)"
+      "Bash(npm run format:*)",
+      "Bash(curl:*)"
     ]
   },
   "sandbox": {
