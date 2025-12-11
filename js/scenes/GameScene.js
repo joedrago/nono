@@ -403,7 +403,7 @@ export class GameScene extends Phaser.Scene {
 
         this.inputManager.on("up", (gamepadIndex) => {
             if (this.paused) {
-                this.pauseIndex = Math.max(0, this.pauseIndex - 1)
+                this.pauseIndex = (this.pauseIndex - 1 + this.pauseItems.length) % this.pauseItems.length
                 this.updatePauseMenu()
                 this.playSound("navigate")
                 return
@@ -422,7 +422,7 @@ export class GameScene extends Phaser.Scene {
 
         this.inputManager.on("down", (gamepadIndex) => {
             if (this.paused) {
-                this.pauseIndex = Math.min(2, this.pauseIndex + 1)
+                this.pauseIndex = (this.pauseIndex + 1) % this.pauseItems.length
                 this.updatePauseMenu()
                 this.playSound("navigate")
                 return

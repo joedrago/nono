@@ -125,13 +125,13 @@ export class MainMenuScene extends Phaser.Scene {
 
     setupInput() {
         this.inputManager.on("up", () => {
-            this.selectedIndex = Math.max(0, this.selectedIndex - 1)
+            this.selectedIndex = (this.selectedIndex - 1 + this.menuItems.length) % this.menuItems.length
             this.updateSelection()
             this.playSound("navigate")
         })
 
         this.inputManager.on("down", () => {
-            this.selectedIndex = Math.min(this.menuItems.length - 1, this.selectedIndex + 1)
+            this.selectedIndex = (this.selectedIndex + 1) % this.menuItems.length
             this.updateSelection()
             this.playSound("navigate")
         })
