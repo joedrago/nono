@@ -4,6 +4,7 @@ import { MainMenuScene } from "./scenes/MainMenuScene.js"
 import { PuzzleSelectScene } from "./scenes/PuzzleSelectScene.js"
 import { GameScene } from "./scenes/GameScene.js"
 import { VictoryScene } from "./scenes/VictoryScene.js"
+import { AchievementsScene } from "./scenes/AchievementsScene.js"
 
 const config = {
     type: Phaser.AUTO,
@@ -20,7 +21,7 @@ const config = {
     input: {
         gamepad: true
     },
-    scene: [BootScene, ProfileSelectScene, MainMenuScene, PuzzleSelectScene, GameScene, VictoryScene]
+    scene: [BootScene, ProfileSelectScene, MainMenuScene, PuzzleSelectScene, GameScene, VictoryScene, AchievementsScene]
 }
 
 const game = new Phaser.Game(config)

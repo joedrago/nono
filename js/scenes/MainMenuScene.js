@@ -12,7 +12,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.input_manager = new InputManager(this)
         this.saveManager = new SaveManager()
 
-        this.menuItems = ["Play", "Infinite Mode", "Change Profile"]
+        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Change Profile"]
         this.selectedIndex = 0
 
         this.createUI()
@@ -145,7 +145,10 @@ export class MainMenuScene extends Phaser.Scene {
                 case 1: // Infinite Mode
                     this.scene.start("PuzzleSelectScene", { infinite: true })
                     break
-                case 2: // Change Profile
+                case 2: // Achievements
+                    this.scene.start("AchievementsScene")
+                    break
+                case 3: // Change Profile
                     this.scene.start("ProfileSelectScene")
                     break
             }

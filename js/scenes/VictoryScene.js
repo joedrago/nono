@@ -1,6 +1,8 @@
 import { InputManager } from "../utils/InputManager.js"
 import { UIScale } from "../utils/UIScale.js"
 import { SaveManager } from "../utils/SaveManager.js"
+import { AchievementManager } from "../utils/AchievementManager.js"
+import { AchievementToast } from "../utils/AchievementToast.js"
 
 export class VictoryScene extends Phaser.Scene {
     constructor() {
@@ -16,10 +18,21 @@ export class VictoryScene extends Phaser.Scene {
         this.uiScale = new UIScale(this)
         this.input_manager = new InputManager(this)
         this.saveManager = new SaveManager()
+        this.achievementManager = new AchievementManager(this.saveManager)
+        this.achievementToast = new AchievementToast(this, this.uiScale)
+
+        // Check for achievements
+        this.achievementManager.checkFirstSolve()
 
         this.createUI()
         this.setupInput()
         this.createParticles()
+
+        // Show any earned achievement toasts
+        const pendingToasts = this.achievementManager.getPendingToasts()
+        if (pendingToasts.length > 0) {
+            this.achievementToast.showAchievements(pendingToasts)
+        }
 
         this.scale.on("resize", () => this.handleResize())
     }
@@ -175,5 +188,8 @@ export class VictoryScene extends Phaser.Scene {
 
     shutdown() {
         this.input_manager.destroy()
+        if (this.achievementToast) {
+            this.achievementToast.destroy()
+        }
     }
 }
