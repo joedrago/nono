@@ -26,6 +26,10 @@ export class GameScene extends Phaser.Scene {
         this.paused = false
         this.pauseIndex = 0
 
+        // Track drag state per gamepad for hold-to-fill behavior
+        // Maps gamepadIndex -> { sourceState, targetState }
+        this.dragState = new Map()
+
         // Initialize or load puzzle state
         if (this.infiniteMode) {
             this.generateInfinitePuzzle()
@@ -381,6 +385,22 @@ export class GameScene extends Phaser.Scene {
     }
 
     setupInput() {
+        // Helper to apply drag fill if conditions match
+        const tryDragFill = (gamepadIndex) => {
+            const drag = this.dragState.get(gamepadIndex)
+            if (!drag) return
+
+            const cursor = this.getCursor(gamepadIndex)
+            const currentState = this.playerGrid[cursor.y][cursor.x]
+
+            // Only apply if current cell matches the source state
+            if (currentState === drag.sourceState) {
+                this.playerGrid[cursor.y][cursor.x] = drag.targetState
+                this.updateCell(cursor.x, cursor.y)
+                this.playSound(drag.targetState === this.FILLED ? "fill" : drag.targetState === this.MARKED ? "mark" : "navigate")
+            }
+        }
+
         this.inputManager.on("up", (gamepadIndex) => {
             if (this.paused) {
                 this.pauseIndex = Math.max(0, this.pauseIndex - 1)
@@ -389,9 +409,15 @@ export class GameScene extends Phaser.Scene {
                 return
             }
             const cursor = this.getCursor(gamepadIndex)
+            const oldY = cursor.y
             cursor.y = Math.max(0, cursor.y - 1)
-            this.updateCursor(gamepadIndex)
-            this.playSound("navigate")
+            if (cursor.y !== oldY) {
+                this.updateCursor(gamepadIndex)
+                tryDragFill(gamepadIndex)
+                if (!this.dragState.has(gamepadIndex)) {
+                    this.playSound("navigate")
+                }
+            }
         })
 
         this.inputManager.on("down", (gamepadIndex) => {
@@ -402,70 +428,115 @@ export class GameScene extends Phaser.Scene {
                 return
             }
             const cursor = this.getCursor(gamepadIndex)
+            const oldY = cursor.y
             cursor.y = Math.min(this.puzzle.height - 1, cursor.y + 1)
-            this.updateCursor(gamepadIndex)
-            this.playSound("navigate")
+            if (cursor.y !== oldY) {
+                this.updateCursor(gamepadIndex)
+                tryDragFill(gamepadIndex)
+                if (!this.dragState.has(gamepadIndex)) {
+                    this.playSound("navigate")
+                }
+            }
         })
 
         this.inputManager.on("left", (gamepadIndex) => {
             if (this.paused) return
             const cursor = this.getCursor(gamepadIndex)
+            const oldX = cursor.x
             cursor.x = Math.max(0, cursor.x - 1)
-            this.updateCursor(gamepadIndex)
-            this.playSound("navigate")
+            if (cursor.x !== oldX) {
+                this.updateCursor(gamepadIndex)
+                tryDragFill(gamepadIndex)
+                if (!this.dragState.has(gamepadIndex)) {
+                    this.playSound("navigate")
+                }
+            }
         })
 
         this.inputManager.on("right", (gamepadIndex) => {
             if (this.paused) return
             const cursor = this.getCursor(gamepadIndex)
+            const oldX = cursor.x
             cursor.x = Math.min(this.puzzle.width - 1, cursor.x + 1)
-            this.updateCursor(gamepadIndex)
-            this.playSound("navigate")
+            if (cursor.x !== oldX) {
+                this.updateCursor(gamepadIndex)
+                tryDragFill(gamepadIndex)
+                if (!this.dragState.has(gamepadIndex)) {
+                    this.playSound("navigate")
+                }
+            }
         })
 
-        this.inputManager.on("accept", (gamepadIndex) => {
-            if (this.paused) {
-                this.handlePauseSelection()
-                return
-            }
+        // Accept button pressed - start drag for fill
+        this.inputManager.on("acceptDown", (gamepadIndex) => {
+            if (this.paused) return
 
             const cursor = this.getCursor(gamepadIndex)
             const currentState = this.playerGrid[cursor.y][cursor.x]
 
-            // Toggle between empty and filled
-            if (currentState === this.FILLED) {
-                this.playerGrid[cursor.y][cursor.x] = this.EMPTY
-            } else {
-                this.playerGrid[cursor.y][cursor.x] = this.FILLED
-            }
+            // Determine source and target states
+            const sourceState = currentState
+            const targetState = currentState === this.FILLED ? this.EMPTY : this.FILLED
 
+            // Store drag state
+            this.dragState.set(gamepadIndex, { sourceState, targetState })
+
+            // Apply to current cell
+            this.playerGrid[cursor.y][cursor.x] = targetState
             this.updateCell(cursor.x, cursor.y)
-            this.saveProgress()
             this.playSound("fill")
-
-            this.checkVictory()
         })
 
+        // Accept button released - end drag and check victory
+        this.inputManager.on("acceptUp", (gamepadIndex) => {
+            if (this.dragState.has(gamepadIndex)) {
+                this.dragState.delete(gamepadIndex)
+                this.saveProgress()
+                this.checkVictory()
+            }
+        })
+
+        // Handle accept for pause menu selection
+        this.inputManager.on("accept", (gamepadIndex) => {
+            if (this.paused) {
+                this.handlePauseSelection()
+            }
+        })
+
+        // Back button pressed - start drag for mark
+        this.inputManager.on("backDown", (gamepadIndex) => {
+            if (this.paused) return
+
+            const cursor = this.getCursor(gamepadIndex)
+            const currentState = this.playerGrid[cursor.y][cursor.x]
+
+            // Determine source and target states
+            const sourceState = currentState
+            const targetState = currentState === this.MARKED ? this.EMPTY : this.MARKED
+
+            // Store drag state
+            this.dragState.set(gamepadIndex, { sourceState, targetState })
+
+            // Apply to current cell
+            this.playerGrid[cursor.y][cursor.x] = targetState
+            this.updateCell(cursor.x, cursor.y)
+            this.playSound("mark")
+        })
+
+        // Back button released - end drag
+        this.inputManager.on("backUp", (gamepadIndex) => {
+            if (this.dragState.has(gamepadIndex)) {
+                this.dragState.delete(gamepadIndex)
+                this.saveProgress()
+            }
+        })
+
+        // Handle back for pause menu
         this.inputManager.on("back", (gamepadIndex) => {
             if (this.paused) {
                 this.hidePauseMenu()
                 this.playSound("navigate")
-                return
             }
-
-            const cursor = this.getCursor(gamepadIndex)
-            const currentState = this.playerGrid[cursor.y][cursor.x]
-
-            // Toggle between empty and marked
-            if (currentState === this.MARKED) {
-                this.playerGrid[cursor.y][cursor.x] = this.EMPTY
-            } else {
-                this.playerGrid[cursor.y][cursor.x] = this.MARKED
-            }
-
-            this.updateCell(cursor.x, cursor.y)
-            this.saveProgress()
-            this.playSound("mark")
         })
 
         this.inputManager.on("start", () => {

@@ -15,6 +15,9 @@ export class InputManager {
         // Track keyboard state for debouncing
         this.keyStates = {}
 
+        // Track held button state per gamepad (for drag-to-fill)
+        this.heldButtons = new Map() // gamepadIndex -> { accept: bool, back: bool }
+
         this.setupKeyboard()
         this.setupGamepad()
     }
@@ -23,9 +26,34 @@ export class InputManager {
         // Keyboard acts as gamepad index -1 (virtual gamepad)
         this.scene.input.keyboard.on("keydown", (event) => {
             const action = this.keyToAction(event.code)
-            if (action && this.canInput(-1)) {
+            if (!action) return
+
+            // Handle hold buttons (accept/back) specially
+            if (action === "accept" || action === "back") {
+                const held = this.getHeldState(-1)
+                if (!held[action]) {
+                    held[action] = true
+                    this.emit(action + "Down", -1)
+                    this.emit(action, -1)
+                    this.lastInputTime.set(-1, Date.now())
+                }
+            } else if (this.canInput(-1)) {
                 this.emit(action, -1)
                 this.lastInputTime.set(-1, Date.now())
+            }
+        })
+
+        this.scene.input.keyboard.on("keyup", (event) => {
+            const action = this.keyToAction(event.code)
+            if (!action) return
+
+            // Handle hold button release
+            if (action === "accept" || action === "back") {
+                const held = this.getHeldState(-1)
+                if (held[action]) {
+                    held[action] = false
+                    this.emit(action + "Up", -1)
+                }
             }
         })
     }
@@ -84,6 +112,7 @@ export class InputManager {
             if (!pad) return
 
             const index = pad.index
+            const held = this.getHeldState(index)
 
             // D-pad
             if (pad.up && this.canInput(index, "up")) {
@@ -104,15 +133,29 @@ export class InputManager {
             }
 
             // A button (index 0 on most gamepads) - Accept/Fill
-            if (pad.A && this.canInput(index, "A")) {
-                this.emit("accept", index)
-                this.setInputTime(index, "A")
+            if (pad.A) {
+                if (!held.accept) {
+                    held.accept = true
+                    this.emit("acceptDown", index)
+                    this.emit("accept", index)
+                    this.setInputTime(index, "A")
+                }
+            } else if (held.accept) {
+                held.accept = false
+                this.emit("acceptUp", index)
             }
 
             // B button (index 1 on most gamepads) - Back/Mark X
-            if (pad.B && this.canInput(index, "B")) {
-                this.emit("back", index)
-                this.setInputTime(index, "B")
+            if (pad.B) {
+                if (!held.back) {
+                    held.back = true
+                    this.emit("backDown", index)
+                    this.emit("back", index)
+                    this.setInputTime(index, "B")
+                }
+            } else if (held.back) {
+                held.back = false
+                this.emit("backUp", index)
             }
 
             // Start button (index 9 on standard gamepads) - Menu
@@ -139,6 +182,18 @@ export class InputManager {
     setInputTime(gamepadIndex, button) {
         const key = `${gamepadIndex}-${button}`
         this.lastInputTime.set(key, Date.now())
+    }
+
+    getHeldState(gamepadIndex) {
+        if (!this.heldButtons.has(gamepadIndex)) {
+            this.heldButtons.set(gamepadIndex, { accept: false, back: false })
+        }
+        return this.heldButtons.get(gamepadIndex)
+    }
+
+    isHeld(gamepadIndex, button) {
+        const held = this.getHeldState(gamepadIndex)
+        return held[button] || false
     }
 
     initCursor(gamepadIndex) {
@@ -203,5 +258,6 @@ export class InputManager {
         this.listeners.clear()
         this.cursors.clear()
         this.lastInputTime.clear()
+        this.heldButtons.clear()
     }
 }
