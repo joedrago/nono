@@ -224,7 +224,13 @@ export class PuzzleSelectScene extends Phaser.Scene {
         const completed = this.saveManager.isPuzzleCompleted(puzzle.id)
         let bgColor = theme.graphics.panelBg
         if (completed) {
-            bgColor = 0x225522 // Keep green for completed
+            bgColor = theme.graphics.puzzleCompleted
+        } else if (puzzle.difficulty === "easy") {
+            bgColor = theme.graphics.puzzleEasy
+        } else if (puzzle.difficulty === "medium") {
+            bgColor = theme.graphics.puzzleMedium
+        } else if (puzzle.difficulty === "hard") {
+            bgColor = theme.graphics.puzzleHard
         }
         bg.fillStyle(bgColor, 0.9)
         bg.fillRoundedRect(-size / 2, -size / 2, size, size, 6)

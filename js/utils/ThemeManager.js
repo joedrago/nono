@@ -43,6 +43,12 @@ export const THEMES = {
             progressBarBg: 0x222244,
             achievementLocked: 0x222233,
 
+            // Puzzle difficulty backgrounds
+            puzzleEasy: 0x333366,
+            puzzleMedium: 0x444455,
+            puzzleHard: 0x553344,
+            puzzleCompleted: 0x225522,
+
             // Cell states
             cellFilled: 0x4488ff,
             cellError: 0xff4444,
@@ -107,6 +113,12 @@ export const THEMES = {
             confirmBg: 0x8b0000, // Dark red
             progressBarBg: 0x5c3c0d, // Brick brown
             achievementLocked: 0x3d2817, // Dark brick
+
+            // Puzzle difficulty backgrounds
+            puzzleEasy: 0x43b047, // Luigi green
+            puzzleMedium: 0xfbd000, // Coin gold
+            puzzleHard: 0xe52521, // Mario red
+            puzzleCompleted: 0x049cd8, // Toad blue
 
             // Cell states
             cellFilled: 0xe52521, // Mario red
