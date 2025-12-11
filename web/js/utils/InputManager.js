@@ -242,8 +242,8 @@ export class InputManager {
             if (!held[action]) {
                 held[action] = true
                 this.markButtonPressed(virtualIndex, action)
-                // Emit down event for accept/back (used for drag-to-fill)
-                if (action === "accept" || action === "back") {
+                // Emit down event for accept/back (used for drag-to-fill) and peek (used for temp show errors)
+                if (action === "accept" || action === "back" || action === "peek") {
                     this.emit(action + "Down", virtualIndex)
                 }
                 this.emit(action, virtualIndex)
@@ -252,8 +252,8 @@ export class InputManager {
             if (held[action]) {
                 held[action] = false
                 this.markButtonReleased(virtualIndex, action)
-                // Emit up event for accept/back (used for drag-to-fill)
-                if (action === "accept" || action === "back") {
+                // Emit up event for accept/back (used for drag-to-fill) and peek (used for temp show errors)
+                if (action === "accept" || action === "back" || action === "peek") {
                     this.emit(action + "Up", virtualIndex)
                 }
             }
@@ -275,6 +275,8 @@ export class InputManager {
             case "b":
             case "x":
                 return "back"
+            case "y":
+                return "peek"
             case "start":
                 return "start"
             case "select":

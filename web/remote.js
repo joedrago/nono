@@ -114,7 +114,8 @@
                 Backspace: "b",
                 KeyX: "x",
                 Escape: "start",
-                KeyY: "select"
+                KeyY: "y",
+                KeyS: "select"
             }
 
             document.addEventListener("keydown", (e) => {
@@ -142,6 +143,7 @@
                 a: false,
                 b: false,
                 x: false,
+                y: false,
                 start: false,
                 select: false
             }
@@ -221,6 +223,16 @@
                     } else if (!xButton && gamepadHeld.x) {
                         gamepadHeld.x = false
                         socket.emit("action", { key: "x", state: "released" })
+                    }
+
+                    // Y button (index 3 on standard gamepads) - peek
+                    const yButton = pad.buttons[3] && pad.buttons[3].pressed
+                    if (yButton && !gamepadHeld.y) {
+                        gamepadHeld.y = true
+                        socket.emit("action", { key: "y", state: "pressed" })
+                    } else if (!yButton && gamepadHeld.y) {
+                        gamepadHeld.y = false
+                        socket.emit("action", { key: "y", state: "released" })
                     }
 
                     // Start button (index 9 on standard gamepads)
