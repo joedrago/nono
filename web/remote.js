@@ -1,4 +1,9 @@
 (function () {
+    // Prevent all default touch behavior on the document to stop double-tap zoom
+    document.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false })
+    document.addEventListener("touchend", (e) => e.preventDefault(), { passive: false })
+    document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false })
+
     const contentEl = document.getElementById("content")
     const path = window.location.pathname
 

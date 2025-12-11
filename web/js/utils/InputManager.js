@@ -8,13 +8,13 @@ const GAMEPAD_TYPE = {
     REMOTE: "remote"
 }
 
-// Global state for remote control - persists across InputManager instances
-// This ensures only one socket listener exists and routes to the active InputManager
-const remoteState = {
+// Global state that persists across InputManager instances (across scene changes)
+// This ensures consistent virtual indices and a single socket listener
+const globalState = {
     activeManager: null,
     listenerRegistered: false,
     remoteToVirtual: new Map(), // Persists remote registrations across scenes
-    nextRemoteVirtualBase: 1000 // Start remote indices high to avoid conflicts
+    nextVirtualIndex: 0 // Global counter for all virtual gamepad types
 }
 
 export class InputManager {
@@ -35,9 +35,6 @@ export class InputManager {
         this.physicalToVirtual = new Map() // physical gamepad index -> virtual index
         this.keyboardVirtualIndex = null // virtual index for keyboard (lazy init)
 
-        // Next available virtual index
-        this.nextVirtualIndex = 0
-
         this.setupKeyboard()
         this.setupGamepad()
         this.setupRemote()
@@ -45,7 +42,7 @@ export class InputManager {
 
     // Register a new virtual gamepad and return its index
     registerVirtualGamepad(type, sourceId) {
-        const virtualIndex = this.nextVirtualIndex++
+        const virtualIndex = globalState.nextVirtualIndex++
         this.virtualGamepads.set(virtualIndex, { type, sourceId })
         console.log(`Virtual gamepad ${virtualIndex} registered: ${type} (source: ${sourceId})`)
         this.emit("gamepadConnected", virtualIndex)
@@ -83,12 +80,12 @@ export class InputManager {
     // Get virtual index for a remote control (uses global state to persist across scenes)
     getRemoteVirtualIndex(remoteIndex) {
         // Check global state first - remote may already be registered from previous scene
-        if (!remoteState.remoteToVirtual.has(remoteIndex)) {
-            const virtualIndex = remoteState.nextRemoteVirtualBase++
-            remoteState.remoteToVirtual.set(remoteIndex, virtualIndex)
+        if (!globalState.remoteToVirtual.has(remoteIndex)) {
+            const virtualIndex = globalState.nextVirtualIndex++
+            globalState.remoteToVirtual.set(remoteIndex, virtualIndex)
             console.log(`Remote ${remoteIndex} assigned virtual index ${virtualIndex}`)
         }
-        const virtualIndex = remoteState.remoteToVirtual.get(remoteIndex)
+        const virtualIndex = globalState.remoteToVirtual.get(remoteIndex)
 
         // Register in this InputManager's local registry if not already
         if (!this.virtualGamepads.has(virtualIndex)) {
@@ -172,15 +169,15 @@ export class InputManager {
         if (!socket) return
 
         // Set this as the active manager to receive remote events
-        remoteState.activeManager = this
+        globalState.activeManager = this
 
         // Only register the global socket listener once
-        if (!remoteState.listenerRegistered) {
-            remoteState.listenerRegistered = true
+        if (!globalState.listenerRegistered) {
+            globalState.listenerRegistered = true
 
             socket.on("action", (data) => {
                 // Route to whichever InputManager is currently active
-                const manager = remoteState.activeManager
+                const manager = globalState.activeManager
                 if (!manager) return
 
                 manager.handleRemoteAction(data)
@@ -406,8 +403,8 @@ export class InputManager {
 
     destroy() {
         // Clear active manager if this is the current one
-        if (remoteState.activeManager === this) {
-            remoteState.activeManager = null
+        if (globalState.activeManager === this) {
+            globalState.activeManager = null
         }
 
         this.listeners.clear()
@@ -416,6 +413,5 @@ export class InputManager {
         this.lastInputTime.clear()
         this.heldButtons.clear()
         this.keyboardVirtualIndex = null
-        this.nextVirtualIndex = 0
     }
 }
