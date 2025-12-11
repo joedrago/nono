@@ -48,7 +48,7 @@ export class ProfileSelectScene extends Phaser.Scene {
         }
 
         // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Select   [Y] Delete Profile", {
+        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Select   [Select] Delete Profile", {
             fontFamily: "monospace",
             fontSize: this.uiScale.fontSize.small + "px",
             color: "#8888aa"

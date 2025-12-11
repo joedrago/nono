@@ -303,6 +303,8 @@ export class InputManager {
                 return "start" // Start button
             case "KeyY":
                 return "peek" // Temporarily show errors
+            case "KeyS":
+                return "delete" // Select button
             default:
                 return null
         }
@@ -434,6 +436,19 @@ export class InputManager {
                 held.peek = false
                 this.markButtonReleased(virtualIndex, "peek")
                 this.emit("peekUp", virtualIndex)
+            }
+
+            // Select button (index 8 on standard gamepads) - Delete
+            const selectButton = pad.buttons[8] && pad.buttons[8].pressed
+            if (selectButton) {
+                if (!held.delete) {
+                    held.delete = true
+                    this.markButtonPressed(virtualIndex, "delete")
+                    this.emit("delete", virtualIndex)
+                }
+            } else if (held.delete) {
+                held.delete = false
+                this.markButtonReleased(virtualIndex, "delete")
             }
         }
     }
