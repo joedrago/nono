@@ -11,10 +11,12 @@ function generateGameId() {
 
 class RemoteManager {
     constructor() {
-        // Map of gameId -> { gameSocket, disconnectTimer }
+        // Map of gameId -> { gameSocket, disconnectTimer, remotes }
         this.games = new Map()
         // Map of socket.id -> gameId (for quick lookup on disconnect)
         this.socketToGame = new Map()
+        // Map of remote socket.id -> { gameId, index }
+        this.remoteToGame = new Map()
         // Disconnect timeout in ms (5 minutes)
         this.disconnectTimeout = 5 * 60 * 1000
     }
@@ -29,7 +31,8 @@ class RemoteManager {
         // Store the game state
         this.games.set(gameId, {
             gameSocket: socket,
-            disconnectTimer: null
+            disconnectTimer: null,
+            remotes: []
         })
         this.socketToGame.set(socket.id, gameId)
 
@@ -85,6 +88,65 @@ class RemoteManager {
 
     getGame(gameId) {
         return this.games.get(gameId)
+    }
+
+    addRemote(socket, gameId) {
+        const game = this.games.get(gameId)
+        if (!game) {
+            console.log(`Remote tried to join non-existent game: ${gameId}`)
+            return false
+        }
+
+        // Add the remote socket to the game's remotes array
+        const index = game.remotes.length
+        game.remotes.push(socket)
+        this.remoteToGame.set(socket.id, { gameId, index })
+
+        console.log(`Remote ${socket.id} joined game ${gameId} as index ${index}`)
+
+        // Listen for action events from this remote
+        socket.on("action", (data) => {
+            this.handleRemoteAction(socket, data)
+        })
+
+        return true
+    }
+
+    handleRemoteAction(socket, data) {
+        const remoteInfo = this.remoteToGame.get(socket.id)
+        if (!remoteInfo) return
+
+        const game = this.games.get(remoteInfo.gameId)
+        if (!game || !game.gameSocket) return
+
+        // Add the remote index to the payload and relay to the game socket
+        const payload = { ...data, remoteIndex: remoteInfo.index }
+        game.gameSocket.emit("action", payload)
+    }
+
+    removeRemote(socket) {
+        const remoteInfo = this.remoteToGame.get(socket.id)
+        if (!remoteInfo) return
+
+        const game = this.games.get(remoteInfo.gameId)
+        if (game) {
+            // Remove the socket from the array
+            game.remotes.splice(remoteInfo.index, 1)
+            console.log(`Remote ${socket.id} disconnected from game ${remoteInfo.gameId}`)
+
+            // Update indices for all remotes after the removed one
+            for (let i = remoteInfo.index; i < game.remotes.length; i++) {
+                const remoteSocket = game.remotes[i]
+                if (remoteSocket) {
+                    const info = this.remoteToGame.get(remoteSocket.id)
+                    if (info) {
+                        info.index = i
+                    }
+                }
+            }
+        }
+
+        this.remoteToGame.delete(socket.id)
     }
 }
 

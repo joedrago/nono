@@ -18,6 +18,10 @@ export class RemoteControl {
                 this.onGameIdReceived(this.gameId)
             }
         })
+
+        this.socket.on("action", (data) => {
+            console.log("Action received:", data)
+        })
     }
 
     requestGameId() {

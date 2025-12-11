@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nono Remote</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: monospace;
             background-color: #1a1a2e;
@@ -14,18 +17,192 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            overflow: hidden;
         }
         .container {
             text-align: center;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         h1 {
             font-size: 2rem;
             margin-bottom: 2rem;
         }
         .game-id {
-            font-size: 4rem;
+            font-size: 3rem;
             letter-spacing: 0.5rem;
+            padding: 1rem;
+            background-color: #2a2a4e;
+            flex-shrink: 0;
+            cursor: pointer;
         }
+        .game-id:hover {
+            background-color: #3a3a5e;
+        }
+
+        /* Controller layout */
+        .controller {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem;
+            gap: 1rem;
+        }
+
+        .controller-left,
+        .controller-right {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .controller-center {
+            flex: 0.5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 2rem;
+        }
+
+        /* D-Pad */
+        .dpad {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            width: min(40vw, 50vh);
+            height: min(40vw, 50vh);
+            gap: 0;
+        }
+
+        .dpad-up,
+        .dpad-down,
+        .dpad-left,
+        .dpad-right,
+        .dpad-center {
+            background-color: #2d2d2d;
+            border: 3px solid #1a1a1a;
+        }
+
+        .dpad-up {
+            grid-column: 2;
+            grid-row: 1;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+        }
+
+        .dpad-down {
+            grid-column: 2;
+            grid-row: 3;
+            border-radius: 0 0 8px 8px;
+            cursor: pointer;
+        }
+
+        .dpad-left {
+            grid-column: 1;
+            grid-row: 2;
+            border-radius: 8px 0 0 8px;
+            cursor: pointer;
+        }
+
+        .dpad-right {
+            grid-column: 3;
+            grid-row: 2;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+        }
+
+        .dpad-center {
+            grid-column: 2;
+            grid-row: 2;
+            border-radius: 0;
+        }
+
+        .dpad-up:active,
+        .dpad-down:active,
+        .dpad-left:active,
+        .dpad-right:active {
+            background-color: #4a4a4a;
+        }
+
+        /* Center buttons (Select/Start) */
+        .center-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .small-button {
+            width: 15vw;
+            max-width: 80px;
+            height: 6vw;
+            max-height: 30px;
+            background-color: #2d2d2d;
+            border: 2px solid #1a1a1a;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(-25deg);
+        }
+
+        .small-button span {
+            font-size: 0.6rem;
+            color: #888;
+            letter-spacing: 0.1rem;
+        }
+
+        .small-button:active {
+            background-color: #4a4a4a;
+        }
+
+        /* Action buttons (A/B) */
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .button-labels {
+            display: flex;
+            gap: min(8vw, 10vh);
+            font-size: 1.5rem;
+            color: #aa3333;
+            font-weight: bold;
+        }
+
+        .button-row {
+            display: flex;
+            gap: min(4vw, 5vh);
+        }
+
+        .action-button {
+            width: min(25vw, 30vh);
+            height: min(25vw, 30vh);
+            background: radial-gradient(circle at 30% 30%, #cc3333, #881111);
+            border: 4px solid #661111;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow:
+                inset 0 -4px 8px rgba(0,0,0,0.4),
+                0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .action-button:active {
+            background: radial-gradient(circle at 30% 30%, #aa2222, #660000);
+            box-shadow:
+                inset 0 2px 4px rgba(0,0,0,0.4),
+                0 2px 4px rgba(0,0,0,0.3);
+            transform: scale(0.95);
+        }
+
+        /* Form styles */
         form {
             display: flex;
             flex-direction: column;

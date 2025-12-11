@@ -38,9 +38,15 @@ io.on("connection", (socket) => {
         socket.emit("gameCreated", { gameId })
     })
 
+    socket.on("remote", (data) => {
+        const { gameId } = data
+        remoteManager.addRemote(socket, gameId)
+    })
+
     socket.on("disconnect", () => {
         console.log("Client disconnected:", socket.id)
         remoteManager.handleDisconnect(socket)
+        remoteManager.removeRemote(socket)
     })
 })
 
