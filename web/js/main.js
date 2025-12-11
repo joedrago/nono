@@ -9,6 +9,7 @@ import { AchievementsScene } from "./scenes/AchievementsScene.js"
 import { ThemeSelectScene } from "./scenes/ThemeSelectScene.js"
 import { OverlayScene } from "./scenes/OverlayScene.js"
 import { RemoteControl } from "./utils/RemoteControl.js"
+import { InputManager } from "./utils/InputManager.js"
 
 const params = new URLSearchParams(window.location.search)
 const offline = params.get("offline") === "true"
@@ -61,4 +62,10 @@ const config = {
     ]
 }
 
-const _game = new Phaser.Game(config)
+const game = new Phaser.Game(config)
+
+// Create the global InputManager singleton after game is ready
+game.events.once("ready", () => {
+    const inputManager = new InputManager(game)
+    window.nonoInputManager = inputManager
+})

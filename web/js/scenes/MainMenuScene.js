@@ -10,7 +10,8 @@ export class MainMenuScene extends Phaser.Scene {
 
     create() {
         this.uiScale = new UIScale(this)
-        this.inputManager = new InputManager(this)
+        this.inputManager = InputManager.getInstance(this.game)
+        this.inputManager.setActiveScene(this)
         this.saveManager = new SaveManager()
         this.themeManager = new ThemeManager(this.saveManager)
 
@@ -186,6 +187,6 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     shutdown() {
-        this.inputManager.destroy()
+        this.inputManager.clearSceneListeners()
     }
 }

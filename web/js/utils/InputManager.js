@@ -1,5 +1,6 @@
 // Unified input manager for gamepad, keyboard, and remote controls
 // All input sources are treated as virtual gamepads with continuous indices
+// This is a singleton - only one instance exists and scenes register themselves as active
 
 // Virtual gamepad types
 const GAMEPAD_TYPE = {
@@ -8,21 +9,19 @@ const GAMEPAD_TYPE = {
     REMOTE: "remote"
 }
 
-// Global state that persists across InputManager instances (across scene changes)
-// This ensures consistent virtual indices and a single socket listener
-const globalState = {
-    activeManager: null,
-    listenerRegistered: false,
-    gamepadListenerRegistered: false,
-    remoteToVirtual: new Map(), // Persists remote registrations across scenes
-    physicalToVirtual: new Map(), // Persists physical gamepad registrations across scenes
-    nextVirtualIndex: 0 // Global counter for all virtual gamepad types
-}
+// Singleton instance
+let instance = null
 
 export class InputManager {
-    constructor(scene) {
-        this.scene = scene
-        this.listeners = new Map() // event -> callbacks
+    constructor(game) {
+        if (instance) {
+            return instance
+        }
+
+        this.game = game
+        this.activeScene = null
+        this.listeners = new Map() // event -> callbacks (per-scene storage)
+
         this.lastInputTime = new Map() // Debounce per virtual gamepad
         this.debounceTime = 150 // ms between inputs
 
@@ -33,21 +32,57 @@ export class InputManager {
         // Virtual indices are assigned continuously as input sources are discovered
         this.virtualGamepads = new Map() // virtualIndex -> { type, sourceId }
 
-        // Keyboard virtual index (local to this manager, lazy init)
+        // Mappings that persist across scenes
+        this.remoteToVirtual = new Map()
+        this.physicalToVirtual = new Map()
+        this.nextVirtualIndex = 0
+
+        // Keyboard virtual index (lazy init)
         this.keyboardVirtualIndex = null
 
-        // Set this as the active manager before setting up inputs
-        // so that global event handlers route to this instance
-        globalState.activeManager = this
+        // Track if global listeners are registered
+        this.keyboardListenerRegistered = false
+        this.gamepadListenerRegistered = false
+        this.remoteListenerRegistered = false
 
-        this.setupKeyboard()
-        this.setupGamepad()
-        this.setupRemote()
+        instance = this
+    }
+
+    // Get the singleton instance (create if needed)
+    static getInstance(game) {
+        if (!instance) {
+            new InputManager(game)
+        }
+        return instance
+    }
+
+    // Set the active scene that receives input events
+    setActiveScene(scene) {
+        this.activeScene = scene
+
+        // Clear per-scene listeners when scene changes
+        this.listeners.clear()
+
+        // Setup input listeners if not already done
+        if (!this.keyboardListenerRegistered) {
+            this.setupKeyboard()
+        }
+        if (!this.gamepadListenerRegistered) {
+            this.setupGamepad()
+        }
+        if (!this.remoteListenerRegistered) {
+            this.setupRemote()
+        }
+
+        // Re-emit gamepadConnected for all known gamepads so scene can track them
+        this.virtualGamepads.forEach((_info, virtualIndex) => {
+            this.emit("gamepadConnected", virtualIndex)
+        })
     }
 
     // Register a new virtual gamepad and return its index
     registerVirtualGamepad(type, sourceId) {
-        const virtualIndex = globalState.nextVirtualIndex++
+        const virtualIndex = this.nextVirtualIndex++
         this.virtualGamepads.set(virtualIndex, { type, sourceId })
         console.log(`Virtual gamepad ${virtualIndex} registered: ${type} (source: ${sourceId})`)
         this.emit("gamepadConnected", virtualIndex)
@@ -73,46 +108,37 @@ export class InputManager {
         return this.keyboardVirtualIndex
     }
 
-    // Get virtual index for a physical gamepad (uses global state to persist across scenes)
+    // Get virtual index for a physical gamepad
     getPhysicalVirtualIndex(physicalIndex) {
-        // Check global state first - gamepad may already be registered from previous scene
-        if (!globalState.physicalToVirtual.has(physicalIndex)) {
-            const virtualIndex = globalState.nextVirtualIndex++
-            globalState.physicalToVirtual.set(physicalIndex, virtualIndex)
-            console.log(`Physical gamepad ${physicalIndex} assigned virtual index ${virtualIndex}`)
-        }
-        const virtualIndex = globalState.physicalToVirtual.get(physicalIndex)
-
-        // Register in this InputManager's local registry if not already
-        if (!this.virtualGamepads.has(virtualIndex)) {
+        if (!this.physicalToVirtual.has(physicalIndex)) {
+            const virtualIndex = this.nextVirtualIndex++
+            this.physicalToVirtual.set(physicalIndex, virtualIndex)
             this.virtualGamepads.set(virtualIndex, { type: GAMEPAD_TYPE.PHYSICAL, sourceId: physicalIndex })
+            console.log(`Physical gamepad ${physicalIndex} assigned virtual index ${virtualIndex}`)
             this.emit("gamepadConnected", virtualIndex)
         }
-
-        return virtualIndex
+        return this.physicalToVirtual.get(physicalIndex)
     }
 
-    // Get virtual index for a remote control (uses global state to persist across scenes)
+    // Get virtual index for a remote control
     getRemoteVirtualIndex(remoteIndex) {
-        // Check global state first - remote may already be registered from previous scene
-        if (!globalState.remoteToVirtual.has(remoteIndex)) {
-            const virtualIndex = globalState.nextVirtualIndex++
-            globalState.remoteToVirtual.set(remoteIndex, virtualIndex)
-            console.log(`Remote ${remoteIndex} assigned virtual index ${virtualIndex}`)
-        }
-        const virtualIndex = globalState.remoteToVirtual.get(remoteIndex)
-
-        // Register in this InputManager's local registry if not already
-        if (!this.virtualGamepads.has(virtualIndex)) {
+        if (!this.remoteToVirtual.has(remoteIndex)) {
+            const virtualIndex = this.nextVirtualIndex++
+            this.remoteToVirtual.set(remoteIndex, virtualIndex)
             this.virtualGamepads.set(virtualIndex, { type: GAMEPAD_TYPE.REMOTE, sourceId: remoteIndex })
+            console.log(`Remote ${remoteIndex} assigned virtual index ${virtualIndex}`)
             this.emit("gamepadConnected", virtualIndex)
         }
-
-        return virtualIndex
+        return this.remoteToVirtual.get(remoteIndex)
     }
 
     setupKeyboard() {
-        this.scene.input.keyboard.on("keydown", (event) => {
+        this.keyboardListenerRegistered = true
+
+        // Use DOM-level keyboard events (persists across scenes)
+        window.addEventListener("keydown", (event) => {
+            if (!this.activeScene) return
+
             const action = this.keyToAction(event.code)
             if (!action) return
 
@@ -134,7 +160,9 @@ export class InputManager {
             }
         })
 
-        this.scene.input.keyboard.on("keyup", (event) => {
+        window.addEventListener("keyup", (event) => {
+            if (!this.activeScene) return
+
             const action = this.keyToAction(event.code)
             if (!action) return
 
@@ -153,42 +181,30 @@ export class InputManager {
     }
 
     setupGamepad() {
-        // Poll gamepads in update loop
-        this.scene.events.on("update", () => this.pollGamepads())
+        this.gamepadListenerRegistered = true
 
-        // Only register global gamepad connection listeners once
-        if (!globalState.gamepadListenerRegistered) {
-            globalState.gamepadListenerRegistered = true
+        // Poll gamepads in game update loop
+        this.game.events.on("step", () => this.pollGamepads())
 
-            // Handle gamepad connection - register as virtual gamepad
-            this.scene.input.gamepad.on("connected", (pad) => {
-                console.log(`Physical gamepad ${pad.index} connected: ${pad.id}`)
-                // Route to whichever InputManager is currently active
-                const manager = globalState.activeManager
-                if (manager) {
-                    manager.getPhysicalVirtualIndex(pad.index)
-                }
-            })
+        // Use DOM-level gamepad connection events
+        window.addEventListener("gamepadconnected", (event) => {
+            console.log(`Physical gamepad ${event.gamepad.index} connected: ${event.gamepad.id}`)
+            this.getPhysicalVirtualIndex(event.gamepad.index)
+        })
 
-            this.scene.input.gamepad.on("disconnected", (pad) => {
-                console.log(`Physical gamepad ${pad.index} disconnected`)
-                const virtualIndex = globalState.physicalToVirtual.get(pad.index)
-                if (virtualIndex !== undefined) {
-                    // Route to whichever InputManager is currently active
-                    const manager = globalState.activeManager
-                    if (manager) {
-                        manager.unregisterVirtualGamepad(virtualIndex)
-                    }
-                    globalState.physicalToVirtual.delete(virtualIndex)
-                }
-            })
-        }
+        window.addEventListener("gamepaddisconnected", (event) => {
+            console.log(`Physical gamepad ${event.gamepad.index} disconnected`)
+            const virtualIndex = this.physicalToVirtual.get(event.gamepad.index)
+            if (virtualIndex !== undefined) {
+                this.unregisterVirtualGamepad(virtualIndex)
+                this.physicalToVirtual.delete(event.gamepad.index)
+            }
+        })
 
-        // Initialize already connected gamepads in this manager's local registry
-        if (this.scene.input.gamepad.total > 0) {
-            this.scene.input.gamepad.gamepads.forEach((pad) => {
-                if (pad) this.getPhysicalVirtualIndex(pad.index)
-            })
+        // Initialize already connected gamepads via navigator API
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : []
+        for (const pad of gamepads) {
+            if (pad) this.getPhysicalVirtualIndex(pad.index)
         }
     }
 
@@ -196,18 +212,12 @@ export class InputManager {
         const socket = window.nonoSocket
         if (!socket) return
 
-        // Only register the global socket listener once
-        if (!globalState.listenerRegistered) {
-            globalState.listenerRegistered = true
+        this.remoteListenerRegistered = true
 
-            socket.on("action", (data) => {
-                // Route to whichever InputManager is currently active
-                const manager = globalState.activeManager
-                if (!manager) return
-
-                manager.handleRemoteAction(data)
-            })
-        }
+        socket.on("action", (data) => {
+            if (!this.activeScene) return
+            this.handleRemoteAction(data)
+        })
     }
 
     handleRemoteAction(data) {
@@ -291,36 +301,45 @@ export class InputManager {
     }
 
     pollGamepads() {
-        const gamepads = this.scene.input.gamepad.gamepads
-        if (!gamepads) return
+        if (!this.activeScene) return
 
-        gamepads.forEach((pad) => {
-            if (!pad) return
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : []
+
+        for (const pad of gamepads) {
+            if (!pad) continue
 
             // Get virtual index for this physical gamepad
             const virtualIndex = this.getPhysicalVirtualIndex(pad.index)
             const held = this.getHeldState(virtualIndex)
 
-            // D-pad
-            if (pad.up && this.canInput(virtualIndex, "up")) {
+            // D-pad (axes 0 and 1, or buttons 12-15 on standard gamepad)
+            const leftStickX = pad.axes[0] || 0
+            const leftStickY = pad.axes[1] || 0
+            const dpadUp = (pad.buttons[12] && pad.buttons[12].pressed) || leftStickY < -0.5
+            const dpadDown = (pad.buttons[13] && pad.buttons[13].pressed) || leftStickY > 0.5
+            const dpadLeft = (pad.buttons[14] && pad.buttons[14].pressed) || leftStickX < -0.5
+            const dpadRight = (pad.buttons[15] && pad.buttons[15].pressed) || leftStickX > 0.5
+
+            if (dpadUp && this.canInput(virtualIndex, "up")) {
                 this.emit("up", virtualIndex)
                 this.setInputTime(virtualIndex, "up")
             }
-            if (pad.down && this.canInput(virtualIndex, "down")) {
+            if (dpadDown && this.canInput(virtualIndex, "down")) {
                 this.emit("down", virtualIndex)
                 this.setInputTime(virtualIndex, "down")
             }
-            if (pad.left && this.canInput(virtualIndex, "left")) {
+            if (dpadLeft && this.canInput(virtualIndex, "left")) {
                 this.emit("left", virtualIndex)
                 this.setInputTime(virtualIndex, "left")
             }
-            if (pad.right && this.canInput(virtualIndex, "right")) {
+            if (dpadRight && this.canInput(virtualIndex, "right")) {
                 this.emit("right", virtualIndex)
                 this.setInputTime(virtualIndex, "right")
             }
 
-            // A button (index 0 on most gamepads) - Accept/Fill
-            if (pad.A) {
+            // A button (index 0 on standard gamepads) - Accept/Fill
+            const aButton = pad.buttons[0] && pad.buttons[0].pressed
+            if (aButton) {
                 if (!held.accept) {
                     held.accept = true
                     this.emit("acceptDown", virtualIndex)
@@ -332,8 +351,9 @@ export class InputManager {
                 this.emit("acceptUp", virtualIndex)
             }
 
-            // B button (index 1 on most gamepads) - Back/Mark X
-            if (pad.B) {
+            // B button (index 1 on standard gamepads) - Back/Mark X
+            const bButton = pad.buttons[1] && pad.buttons[1].pressed
+            if (bButton) {
                 if (!held.back) {
                     held.back = true
                     this.emit("backDown", virtualIndex)
@@ -353,11 +373,12 @@ export class InputManager {
             }
 
             // Y button (index 3 on standard gamepads) - Delete
-            if (pad.Y && this.canInput(virtualIndex, "delete")) {
+            const yButton = pad.buttons[3] && pad.buttons[3].pressed
+            if (yButton && this.canInput(virtualIndex, "delete")) {
                 this.emit("delete", virtualIndex)
                 this.setInputTime(virtualIndex, "delete")
             }
-        })
+        }
     }
 
     canInput(virtualIndex, button = "any") {
@@ -426,17 +447,8 @@ export class InputManager {
         }
     }
 
-    destroy() {
-        // Clear active manager if this is the current one
-        if (globalState.activeManager === this) {
-            globalState.activeManager = null
-        }
-
-        // Clear local state only - global state persists across scenes
+    // Called when a scene shuts down - clears listeners but keeps singleton alive
+    clearSceneListeners() {
         this.listeners.clear()
-        this.virtualGamepads.clear()
-        this.lastInputTime.clear()
-        this.heldButtons.clear()
-        this.keyboardVirtualIndex = null
     }
 }
