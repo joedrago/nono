@@ -82,6 +82,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     loadPuzzleState() {
+        // If puzzle is already completed, load the solution
+        if (this.saveManager.isPuzzleCompleted(this.puzzle.id)) {
+            this.playerGrid = this.puzzle.solution.map((row) => row.map((cell) => (cell === 1 ? this.FILLED : this.EMPTY)))
+            return
+        }
+
         const progress = this.saveManager.getPuzzleProgress(this.puzzle.id)
 
         if (progress) {
