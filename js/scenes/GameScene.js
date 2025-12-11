@@ -214,11 +214,16 @@ export class GameScene extends Phaser.Scene {
         this.uiContainer.add(this.nameText)
 
         // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(95), "[A] Fill   [B] Mark X / Menu", {
-            fontFamily: "monospace",
-            fontSize: this.uiScale.fontSize.small + "px",
-            color: "#8888aa"
-        })
+        this.instructions = this.add.text(
+            this.uiScale.centerX,
+            this.uiScale.percent(95),
+            "[A] Fill   [B] Mark X   [Start] Menu",
+            {
+                fontFamily: "monospace",
+                fontSize: this.uiScale.fontSize.small + "px",
+                color: "#8888aa"
+            }
+        )
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
     }
@@ -445,16 +450,6 @@ export class GameScene extends Phaser.Scene {
             const cursor = this.getCursor(gamepadIndex)
             const currentState = this.playerGrid[cursor.y][cursor.x]
 
-            // If cursor is at edge and cell is empty, show pause menu
-            if (
-                currentState === this.EMPTY &&
-                (cursor.x === 0 || cursor.x === this.puzzle.width - 1 || cursor.y === 0 || cursor.y === this.puzzle.height - 1)
-            ) {
-                this.showPauseMenu()
-                this.playSound("navigate")
-                return
-            }
-
             // Toggle between empty and marked
             if (currentState === this.MARKED) {
                 this.playerGrid[cursor.y][cursor.x] = this.EMPTY
@@ -465,6 +460,15 @@ export class GameScene extends Phaser.Scene {
             this.updateCell(cursor.x, cursor.y)
             this.saveProgress()
             this.playSound("mark")
+        })
+
+        this.input_manager.on("start", () => {
+            if (this.paused) {
+                this.hidePauseMenu()
+            } else {
+                this.showPauseMenu()
+            }
+            this.playSound("navigate")
         })
     }
 

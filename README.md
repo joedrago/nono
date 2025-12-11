@@ -41,12 +41,14 @@ Then open `http://localhost:8000` in your browser.
 ### Gamepad
 - **D-pad**: Navigate menus and move cursor on puzzle grid
 - **A button**: Select menu items / Fill cell
-- **B button**: Go back / Mark cell with X
+- **B button**: Go back in menus / Mark cell with X
+- **Start button**: Open pause menu (in puzzle)
 
 ### Keyboard (for debugging)
-- **Arrow keys**: Navigate menus and move cursor
-- **Enter**: Select / Fill
-- **Escape**: Back / Mark X
+- **Arrow keys**: D-pad (navigate menus and move cursor)
+- **Enter**: A button (select / fill)
+- **Backspace**: B button (back / mark X)
+- **Escape**: Start button (pause menu)
 
 ## How to Play Nonograms
 

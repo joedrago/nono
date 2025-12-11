@@ -64,9 +64,11 @@ export class InputManager {
             case "ArrowRight":
                 return "right"
             case "Enter":
-                return "accept"
+                return "accept" // A button
+            case "Backspace":
+                return "back" // B button
             case "Escape":
-                return "back"
+                return "start" // Start button
             default:
                 return null
         }
@@ -109,6 +111,13 @@ export class InputManager {
             if (pad.B && this.canInput(index, "B")) {
                 this.emit("back", index)
                 this.setInputTime(index, "B")
+            }
+
+            // Start button (index 9 on standard gamepads) - Menu
+            const startButton = pad.buttons[9]
+            if (startButton && startButton.pressed && this.canInput(index, "start")) {
+                this.emit("start", index)
+                this.setInputTime(index, "start")
             }
         })
     }
