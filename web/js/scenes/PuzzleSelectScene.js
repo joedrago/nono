@@ -21,7 +21,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.difficulties = ["easy", "medium", "hard"]
         this.difficultyLabels = { easy: "Easy (5x5)", medium: "Medium (10x10)", hard: "Hard (15x15)" }
 
-        this.gridRows = 2
+        this.gridRows = 3
         this.selectedIndex = 0
         this.scrollOffset = 0 // How many columns scrolled to the right
 
@@ -43,12 +43,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
     }
 
     sortPuzzles() {
-        // Sort by difficulty (easy, medium, hard), then by name
-        const difficultyOrder = { easy: 0, medium: 1, hard: 2 }
+        // Sort by ordinal
         this.sortedPuzzles = [...this.allPuzzles].sort((a, b) => {
-            const diffCompare = difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]
-            if (diffCompare !== 0) return diffCompare
-            return a.name.localeCompare(b.name)
+            return (a.ordinal || 0) - (b.ordinal || 0)
         })
     }
 
@@ -66,9 +63,10 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.uiContainer.add(this.title)
 
         // Calculate grid dimensions
-        this.cellSize = this.uiScale.percent(18)
+        this.cellHeight = this.uiScale.percent(18)
+        this.cellWidth = this.cellHeight * 2
         this.cellSpacing = this.uiScale.percent(3)
-        this.visibleCols = Math.floor((this.uiScale.width * 0.85) / (this.cellSize + this.cellSpacing))
+        this.visibleCols = Math.floor((this.uiScale.width * 0.85) / (this.cellWidth + this.cellSpacing))
         this.totalCols = Math.ceil(this.sortedPuzzles.length / this.gridRows)
 
         // Create puzzle grid
@@ -192,8 +190,8 @@ export class PuzzleSelectScene extends Phaser.Scene {
         const startCol = this.scrollOffset
         const endCol = Math.min(startCol + this.visibleCols, this.totalCols)
 
-        const gridWidth = this.visibleCols * (this.cellSize + this.cellSpacing) - this.cellSpacing
-        const gridHeight = this.gridRows * (this.cellSize + this.cellSpacing) - this.cellSpacing
+        const gridWidth = this.visibleCols * (this.cellWidth + this.cellSpacing) - this.cellSpacing
+        const gridHeight = this.gridRows * (this.cellHeight + this.cellSpacing) - this.cellSpacing
 
         for (let col = startCol; col < endCol; col++) {
             for (let row = 0; row < this.gridRows; row++) {
@@ -203,10 +201,10 @@ export class PuzzleSelectScene extends Phaser.Scene {
                 const puzzle = this.sortedPuzzles[puzzleIndex]
                 const visualCol = col - startCol
 
-                const x = -gridWidth / 2 + visualCol * (this.cellSize + this.cellSpacing) + this.cellSize / 2
-                const y = -gridHeight / 2 + row * (this.cellSize + this.cellSpacing) + this.cellSize / 2
+                const x = -gridWidth / 2 + visualCol * (this.cellWidth + this.cellSpacing) + this.cellWidth / 2
+                const y = -gridHeight / 2 + row * (this.cellHeight + this.cellSpacing) + this.cellHeight / 2
 
-                const item = this.createPuzzleItem(puzzle, x, y, this.cellSize, puzzleIndex)
+                const item = this.createPuzzleItem(puzzle, x, y, this.cellWidth, this.cellHeight, puzzleIndex)
                 this.puzzleItems.push(item)
                 this.gridContainer.add(item.container)
             }
@@ -215,7 +213,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.updateGridSelection()
     }
 
-    createPuzzleItem(puzzle, x, y, size, index) {
+    createPuzzleItem(puzzle, x, y, width, height, index) {
         const container = this.add.container(x, y)
         const theme = this.themeManager.getTheme()
 
@@ -233,11 +231,21 @@ export class PuzzleSelectScene extends Phaser.Scene {
             bgColor = theme.graphics.puzzleHard
         }
         bg.fillStyle(bgColor, 0.9)
-        bg.fillRoundedRect(-size / 2, -size / 2, size, size, 6)
+        bg.fillRoundedRect(-width / 2, -height / 2, width, height, 6)
         container.add(bg)
 
+        // Ordinal number
+        const ordinalStr = String(puzzle.ordinal || 0).padStart(3, "0")
+        const ordinalText = this.add.text(0, -height / 3, `#${ordinalStr}`, {
+            fontFamily: theme.font,
+            fontSize: this.uiScale.fontSize.tiny + "px",
+            color: theme.text.muted
+        })
+        ordinalText.setOrigin(0.5)
+        container.add(ordinalText)
+
         // Puzzle name
-        const name = this.add.text(0, -size / 6, puzzle.name, {
+        const name = this.add.text(0, 0, puzzle.name, {
             fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
             color: theme.text.primary
@@ -246,7 +254,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
         container.add(name)
 
         // Size indicator
-        const sizeText = this.add.text(0, size / 6, `${puzzle.width}x${puzzle.height}`, {
+        const sizeText = this.add.text(0, height / 3, `${puzzle.width}x${puzzle.height}`, {
             fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.tiny + "px",
             color: theme.text.muted
@@ -256,7 +264,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         // Checkmark if completed
         if (completed) {
-            const check = this.add.text(size / 2 - this.uiScale.percent(2), -size / 2 + this.uiScale.percent(2), "✓", {
+            const check = this.add.text(width / 2 - this.uiScale.percent(2), -height / 2 + this.uiScale.percent(2), "✓", {
                 fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.medium + "px",
                 color: theme.text.success
@@ -268,7 +276,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
         // Selection indicator
         const indicator = this.add.graphics()
         indicator.lineStyle(3, theme.graphics.selectionIndicator, 1)
-        indicator.strokeRoundedRect(-size / 2 - 4, -size / 2 - 4, size + 8, size + 8, 8)
+        indicator.strokeRoundedRect(-width / 2 - 4, -height / 2 - 4, width + 8, height + 8, 8)
         indicator.setVisible(false)
         container.add(indicator)
 

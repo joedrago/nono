@@ -10,7 +10,8 @@
         "lint": "eslint web/js --ignore-pattern web/js/lib/",
         "electron": "electron electron/main.js",
         "make": "electron-forge make",
-        "build:puzzles": "node scripts/build-puzzles.js"
+        "build:puzzles": "node scripts/build-puzzles.js",
+        "validate:puzzles": "node scripts/validate-puzzles.js"
     },
     "devDependencies": {
         "@electron-forge/cli": "^7.10.2",

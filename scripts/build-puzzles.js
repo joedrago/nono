@@ -8,6 +8,7 @@ const outputFile = path.join(puzzlesDir, "puzzles.json")
 
 const difficulties = ["easy", "medium", "hard"]
 const puzzles = []
+let ordinal = 1
 
 for (const difficulty of difficulties) {
     const difficultyDir = path.join(puzzlesDir, difficulty)
@@ -24,8 +25,9 @@ for (const difficulty of difficulties) {
         try {
             const content = fs.readFileSync(filePath, "utf8")
             const puzzle = JSON.parse(content)
+            puzzle.ordinal = ordinal++
             puzzles.push(puzzle)
-            console.log(`  Added: ${puzzle.name} (${puzzle.difficulty})`)
+            console.log(`  Added: #${String(puzzle.ordinal).padStart(3, "0")} ${puzzle.name} (${puzzle.difficulty})`)
         } catch (err) {
             console.error(`Error reading ${filePath}: ${err.message}`)
         }

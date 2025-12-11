@@ -93,7 +93,20 @@ export class VictoryScene extends Phaser.Scene {
         this.uiContainer.add(this.statsText)
 
         // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[A] or [B] Continue", {
+        let instructionText = "[A] Next Puzzle   [B] Puzzle Select"
+        if (this.infiniteMode) {
+            instructionText = "[A] or [B] Continue"
+        } else {
+            // Check if this is the last puzzle
+            const allPuzzles = this.registry.get("puzzles") || []
+            const sortedPuzzles = [...allPuzzles].sort((a, b) => (a.ordinal || 0) - (b.ordinal || 0))
+            const currentOrdinal = this.puzzle.ordinal || 0
+            const nextPuzzle = sortedPuzzles.find((p) => (p.ordinal || 0) > currentOrdinal)
+            if (!nextPuzzle) {
+                instructionText = "[A] or [B] Puzzle Select"
+            }
+        }
+        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), instructionText, {
             fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
             color: theme.text.instructions
@@ -181,7 +194,29 @@ export class VictoryScene extends Phaser.Scene {
             }
         }
 
-        this.inputManager.on("accept", goBack)
+        const goNext = () => {
+            if (this.infiniteMode) {
+                // In infinite mode, just go back to selection
+                goBack()
+                return
+            }
+
+            // Find next puzzle by ordinal
+            const allPuzzles = this.registry.get("puzzles") || []
+            const sortedPuzzles = [...allPuzzles].sort((a, b) => (a.ordinal || 0) - (b.ordinal || 0))
+            const currentOrdinal = this.puzzle.ordinal || 0
+            const nextPuzzle = sortedPuzzles.find((p) => (p.ordinal || 0) > currentOrdinal)
+
+            if (nextPuzzle) {
+                this.playSound("select")
+                this.scene.start("GameScene", { puzzle: nextPuzzle })
+            } else {
+                // Last puzzle, go back to selection
+                goBack()
+            }
+        }
+
+        this.inputManager.on("accept", goNext)
         this.inputManager.on("back", goBack)
     }
 
