@@ -50,8 +50,31 @@ export class SaveManager {
             slot,
             completedPuzzles: [],
             puzzleProgress: {},
-            infiniteSolved: 0
+            infiniteSolved: {
+                easy: 0,
+                medium: 0,
+                hard: 0
+            }
         }
+    }
+
+    // Migrate old infiniteSolved format (number) to new format (object by difficulty)
+    migrateInfiniteSolved(slotData) {
+        if (typeof slotData.infiniteSolved === "number") {
+            // Old format - convert to new format, put all in easy as default
+            slotData.infiniteSolved = {
+                easy: slotData.infiniteSolved,
+                medium: 0,
+                hard: 0
+            }
+        } else if (!slotData.infiniteSolved) {
+            slotData.infiniteSolved = {
+                easy: 0,
+                medium: 0,
+                hard: 0
+            }
+        }
+        return slotData
     }
 
     // Get slot info for UI display
@@ -76,7 +99,10 @@ export class SaveManager {
     getCurrentSlotData() {
         const slot = this.getCurrentSlot()
         const data = this.getAllData()
-        return data.slots[slot] || this.createEmptySlot(slot)
+        let slotData = data.slots[slot] || this.createEmptySlot(slot)
+        // Migrate old format if needed
+        slotData = this.migrateInfiniteSolved(slotData)
+        return slotData
     }
 
     // Save current slot data
@@ -127,16 +153,33 @@ export class SaveManager {
         this.saveCurrentSlotData(slotData)
     }
 
-    // Get infinite puzzles solved count
-    getInfiniteSolved() {
+    // Get infinite puzzles solved count (total or by difficulty)
+    getInfiniteSolved(difficulty = null) {
         const slotData = this.getCurrentSlotData()
-        return slotData.infiniteSolved || 0
+        const solved = slotData.infiniteSolved
+
+        if (difficulty) {
+            return solved[difficulty] || 0
+        }
+
+        // Return total
+        return (solved.easy || 0) + (solved.medium || 0) + (solved.hard || 0)
     }
 
-    // Increment infinite puzzles solved
-    incrementInfiniteSolved() {
+    // Get infinite solved counts by difficulty
+    getInfiniteSolvedByDifficulty() {
         const slotData = this.getCurrentSlotData()
-        slotData.infiniteSolved = (slotData.infiniteSolved || 0) + 1
+        return {
+            easy: slotData.infiniteSolved.easy || 0,
+            medium: slotData.infiniteSolved.medium || 0,
+            hard: slotData.infiniteSolved.hard || 0
+        }
+    }
+
+    // Increment infinite puzzles solved for a specific difficulty
+    incrementInfiniteSolved(difficulty) {
+        const slotData = this.getCurrentSlotData()
+        slotData.infiniteSolved[difficulty] = (slotData.infiniteSolved[difficulty] || 0) + 1
         this.saveCurrentSlotData(slotData)
     }
 

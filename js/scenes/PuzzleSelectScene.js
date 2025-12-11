@@ -85,7 +85,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.uiContainer = this.add.container(0, 0)
 
         // Title
-        this.title = this.add.text(this.uiScale.centerX, this.uiScale.percent(15), "INFINITE MODE", {
+        this.title = this.add.text(this.uiScale.centerX, this.uiScale.percent(10), "INFINITE MODE", {
             fontFamily: "monospace",
             fontSize: this.uiScale.fontSize.title + "px",
             color: "#ff88ff"
@@ -93,23 +93,26 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.title.setOrigin(0.5)
         this.uiContainer.add(this.title)
 
-        // Infinite puzzles solved count
-        const solved = this.saveManager.getInfiniteSolved()
-        this.solvedText = this.add.text(this.uiScale.centerX, this.uiScale.percent(30), `Puzzles Solved: ${solved}`, {
+        // Infinite puzzles solved counts by difficulty
+        const solvedCounts = this.saveManager.getInfiniteSolvedByDifficulty()
+        const total = solvedCounts.easy + solvedCounts.medium + solvedCounts.hard
+
+        this.solvedText = this.add.text(this.uiScale.centerX, this.uiScale.percent(22), `Total Solved: ${total}`, {
             fontFamily: "monospace",
-            fontSize: this.uiScale.fontSize.large + "px",
+            fontSize: this.uiScale.fontSize.medium + "px",
             color: "#aaaaff"
         })
         this.solvedText.setOrigin(0.5)
         this.uiContainer.add(this.solvedText)
 
-        // Difficulty selection
+        // Difficulty selection with solved counts
         this.diffButtons = []
-        const startY = this.uiScale.percent(45)
-        const spacing = this.uiScale.percent(12)
+        const startY = this.uiScale.percent(38)
+        const spacing = this.uiScale.percent(14)
 
         this.difficulties.forEach((diff, i) => {
-            const btn = this.createDiffButton(this.difficultyLabels[diff], startY + i * spacing, i)
+            const count = solvedCounts[diff]
+            const btn = this.createDiffButton(this.difficultyLabels[diff], count, startY + i * spacing, i)
             this.diffButtons.push(btn)
             this.uiContainer.add(btn.container)
         })
@@ -127,24 +130,34 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.uiContainer.add(this.instructions)
     }
 
-    createDiffButton(text, y, index) {
+    createDiffButton(text, solvedCount, y, index) {
         const container = this.add.container(this.uiScale.centerX, y)
 
-        const width = this.uiScale.percent(40)
-        const height = this.uiScale.percent(9)
+        const width = this.uiScale.percent(45)
+        const height = this.uiScale.percent(11)
 
         const bg = this.add.graphics()
         bg.fillStyle(0x333355, 0.8)
         bg.fillRoundedRect(-width / 2, -height / 2, width, height, 8)
         container.add(bg)
 
-        const label = this.add.text(0, 0, text, {
+        // Difficulty label
+        const label = this.add.text(0, -this.uiScale.percent(1.5), text, {
             fontFamily: "monospace",
             fontSize: this.uiScale.fontSize.medium + "px",
             color: "#e0e0ff"
         })
         label.setOrigin(0.5)
         container.add(label)
+
+        // Solved count
+        const countText = this.add.text(0, this.uiScale.percent(2.5), `Solved: ${solvedCount}`, {
+            fontFamily: "monospace",
+            fontSize: this.uiScale.fontSize.small + "px",
+            color: solvedCount > 0 ? "#88ff88" : "#888888"
+        })
+        countText.setOrigin(0.5)
+        container.add(countText)
 
         const indicator = this.add.graphics()
         indicator.lineStyle(3, 0x00ff00, 1)

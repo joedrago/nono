@@ -571,7 +571,7 @@ export class GameScene extends Phaser.Scene {
         this.playSound("victory")
 
         if (this.infiniteMode) {
-            this.saveManager.incrementInfiniteSolved()
+            this.saveManager.incrementInfiniteSolved(this.puzzle.difficulty)
         } else {
             this.saveManager.markPuzzleCompleted(this.puzzle.id)
         }
