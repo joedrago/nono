@@ -96,7 +96,7 @@ export class VictoryScene extends Phaser.Scene {
         // Instructions
         let instructionText = "[A] Next Puzzle   [B] Puzzle Select"
         if (this.infiniteMode) {
-            instructionText = "[A] or [B] Continue"
+            instructionText = "[A] New Puzzle   [B] Puzzle Select"
         } else {
             // Check if this is the last puzzle
             const allPuzzles = this.registry.get("puzzles") || []
@@ -197,8 +197,9 @@ export class VictoryScene extends Phaser.Scene {
 
         const goNext = () => {
             if (this.infiniteMode) {
-                // In infinite mode, just go back to selection
-                goBack()
+                // In infinite mode, start a new puzzle of the same difficulty
+                this.playSound("select")
+                this.scene.start("GameScene", { infinite: true, difficulty: this.puzzle.difficulty })
                 return
             }
 

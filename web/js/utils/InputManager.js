@@ -42,6 +42,18 @@ export class InputManager {
         this.gamepadListenerRegistered = false
         this.remoteListenerRegistered = false
 
+        // Key repeat configuration
+        this.repeatInitialDelay = 600 // ms before first repeat
+        this.repeatRate = 150 // ms between repeats
+        this.repeatTimerInterval = 50 // ms timer granularity
+
+        // Track when each button was pressed and last repeat time
+        // Map: virtualIndex -> { buttonName -> { pressedAt, lastRepeatAt } }
+        this.repeatState = new Map()
+
+        // Start the repeat timer
+        this.startRepeatTimer()
+
         instance = this
     }
 
@@ -146,6 +158,7 @@ export class InputManager {
             // Only emit if not already held (prevents auto-repeat)
             if (!held[action]) {
                 held[action] = true
+                this.markButtonPressed(virtualIndex, action)
                 // Emit down event for accept/back (used for drag-to-fill) and peek (used for temp show errors)
                 if (action === "accept" || action === "back" || action === "peek") {
                     this.emit(action + "Down", virtualIndex)
@@ -166,6 +179,7 @@ export class InputManager {
             const held = this.getHeldState(this.keyboardVirtualIndex)
             if (held[action]) {
                 held[action] = false
+                this.markButtonReleased(this.keyboardVirtualIndex, action)
                 // Emit up event for accept/back (used for drag-to-fill) and peek (used for temp show errors)
                 if (action === "accept" || action === "back" || action === "peek") {
                     this.emit(action + "Up", this.keyboardVirtualIndex)
@@ -227,6 +241,7 @@ export class InputManager {
             // Only emit if not already held (prevents auto-repeat)
             if (!held[action]) {
                 held[action] = true
+                this.markButtonPressed(virtualIndex, action)
                 // Emit down event for accept/back (used for drag-to-fill)
                 if (action === "accept" || action === "back") {
                     this.emit(action + "Down", virtualIndex)
@@ -236,6 +251,7 @@ export class InputManager {
         } else if (state === "released") {
             if (held[action]) {
                 held[action] = false
+                this.markButtonReleased(virtualIndex, action)
                 // Emit up event for accept/back (used for drag-to-fill)
                 if (action === "accept" || action === "back") {
                     this.emit(action + "Up", virtualIndex)
@@ -316,40 +332,48 @@ export class InputManager {
             if (dpadUp) {
                 if (!held.up) {
                     held.up = true
+                    this.markButtonPressed(virtualIndex, "up")
                     this.emit("up", virtualIndex)
                 }
-            } else {
+            } else if (held.up) {
                 held.up = false
+                this.markButtonReleased(virtualIndex, "up")
             }
 
             // D-pad down
             if (dpadDown) {
                 if (!held.down) {
                     held.down = true
+                    this.markButtonPressed(virtualIndex, "down")
                     this.emit("down", virtualIndex)
                 }
-            } else {
+            } else if (held.down) {
                 held.down = false
+                this.markButtonReleased(virtualIndex, "down")
             }
 
             // D-pad left
             if (dpadLeft) {
                 if (!held.left) {
                     held.left = true
+                    this.markButtonPressed(virtualIndex, "left")
                     this.emit("left", virtualIndex)
                 }
-            } else {
+            } else if (held.left) {
                 held.left = false
+                this.markButtonReleased(virtualIndex, "left")
             }
 
             // D-pad right
             if (dpadRight) {
                 if (!held.right) {
                     held.right = true
+                    this.markButtonPressed(virtualIndex, "right")
                     this.emit("right", virtualIndex)
                 }
-            } else {
+            } else if (held.right) {
                 held.right = false
+                this.markButtonReleased(virtualIndex, "right")
             }
 
             // A button (index 0 on standard gamepads) - Accept/Fill
@@ -357,11 +381,13 @@ export class InputManager {
             if (aButton) {
                 if (!held.accept) {
                     held.accept = true
+                    this.markButtonPressed(virtualIndex, "accept")
                     this.emit("acceptDown", virtualIndex)
                     this.emit("accept", virtualIndex)
                 }
             } else if (held.accept) {
                 held.accept = false
+                this.markButtonReleased(virtualIndex, "accept")
                 this.emit("acceptUp", virtualIndex)
             }
 
@@ -372,11 +398,13 @@ export class InputManager {
             if (backPressed) {
                 if (!held.back) {
                     held.back = true
+                    this.markButtonPressed(virtualIndex, "back")
                     this.emit("backDown", virtualIndex)
                     this.emit("back", virtualIndex)
                 }
             } else if (held.back) {
                 held.back = false
+                this.markButtonReleased(virtualIndex, "back")
                 this.emit("backUp", virtualIndex)
             }
 
@@ -385,10 +413,12 @@ export class InputManager {
             if (startButton) {
                 if (!held.start) {
                     held.start = true
+                    this.markButtonPressed(virtualIndex, "start")
                     this.emit("start", virtualIndex)
                 }
-            } else {
+            } else if (held.start) {
                 held.start = false
+                this.markButtonReleased(virtualIndex, "start")
             }
 
             // Y button (index 3 on standard gamepads) - Delete
@@ -396,10 +426,12 @@ export class InputManager {
             if (yButton) {
                 if (!held.delete) {
                     held.delete = true
+                    this.markButtonPressed(virtualIndex, "delete")
                     this.emit("delete", virtualIndex)
                 }
-            } else {
+            } else if (held.delete) {
                 held.delete = false
+                this.markButtonReleased(virtualIndex, "delete")
             }
         }
     }
@@ -439,6 +471,56 @@ export class InputManager {
     // Get count of active virtual gamepads
     getConnectedGamepadCount() {
         return this.virtualGamepads.size
+    }
+
+    // Key repeat methods
+    startRepeatTimer() {
+        setInterval(() => this.processRepeats(), this.repeatTimerInterval)
+    }
+
+    getRepeatState(virtualIndex) {
+        if (!this.repeatState.has(virtualIndex)) {
+            this.repeatState.set(virtualIndex, {})
+        }
+        return this.repeatState.get(virtualIndex)
+    }
+
+    markButtonPressed(virtualIndex, button) {
+        const state = this.getRepeatState(virtualIndex)
+        const now = Date.now()
+        state[button] = { pressedAt: now, lastRepeatAt: now }
+    }
+
+    markButtonReleased(virtualIndex, button) {
+        const state = this.getRepeatState(virtualIndex)
+        delete state[button]
+    }
+
+    processRepeats() {
+        if (!this.activeScene) return
+
+        const now = Date.now()
+        // Buttons that should repeat (directional only)
+        const repeatableButtons = ["up", "down", "left", "right"]
+
+        this.repeatState.forEach((buttons, virtualIndex) => {
+            for (const button of repeatableButtons) {
+                const timing = buttons[button]
+                if (!timing) continue
+
+                const timeSincePressed = now - timing.pressedAt
+                const timeSinceLastRepeat = now - timing.lastRepeatAt
+
+                // Check if we've passed the initial delay
+                if (timeSincePressed >= this.repeatInitialDelay) {
+                    // Check if enough time has passed since last repeat
+                    if (timeSinceLastRepeat >= this.repeatRate) {
+                        timing.lastRepeatAt = now
+                        this.emit(button, virtualIndex)
+                    }
+                }
+            }
+        })
     }
 
     // Event emitter methods

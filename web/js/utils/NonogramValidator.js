@@ -309,6 +309,12 @@ export class NonogramValidator {
     generateValidPuzzle(width, height, maxAttempts = 100) {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             const solution = this.generateRandomSolution(width, height)
+
+            // Check hint counts before expensive validation
+            if (!this.checkHintCounts(solution)) {
+                continue
+            }
+
             const result = this.validate(solution)
 
             if (result.valid) {
@@ -319,20 +325,95 @@ export class NonogramValidator {
     }
 
     /**
-     * Generate a random solution grid
+     * Check if solution has reasonable hint counts (max 3 per line, rare exceptions)
+     */
+    checkHintCounts(solution) {
+        const rowHints = this.calculateRowHints(solution)
+        const colHints = this.calculateColHints(solution)
+
+        let overLimitCount = 0
+        const maxOverLimit = 2 // Allow rare exceptions
+
+        for (const hints of rowHints) {
+            if (hints.length > 3) {
+                overLimitCount++
+                if (hints.length > 4 || overLimitCount > maxOverLimit) {
+                    return false
+                }
+            }
+        }
+
+        for (const hints of colHints) {
+            if (hints.length > 3) {
+                overLimitCount++
+                if (hints.length > 4 || overLimitCount > maxOverLimit) {
+                    return false
+                }
+            }
+        }
+
+        return true
+    }
+
+    /**
+     * Generate a random solution grid with contiguous blocks (less swiss cheese)
      */
     generateRandomSolution(width, height) {
-        // Use a density that tends to produce solvable puzzles
-        // Lower density (30-50%) tends to work better than higher
-        const density = 0.3 + Math.random() * 0.2
-        const solution = []
+        // Start with empty grid
+        const solution = Array(height)
+            .fill(null)
+            .map(() => Array(width).fill(0))
 
-        for (let y = 0; y < height; y++) {
-            const row = []
-            for (let x = 0; x < width; x++) {
-                row.push(Math.random() < density ? 1 : 0)
+        // Generate using random rectangular blocks
+        const numBlocks = Math.floor((width * height) / 8) + Math.floor(Math.random() * (width * height) / 8)
+
+        for (let i = 0; i < numBlocks; i++) {
+            // Random block dimensions - prefer wider/taller blocks
+            const blockWidth = 1 + Math.floor(Math.random() * Math.min(4, width))
+            const blockHeight = 1 + Math.floor(Math.random() * Math.min(4, height))
+
+            // Random position
+            const startX = Math.floor(Math.random() * (width - blockWidth + 1))
+            const startY = Math.floor(Math.random() * (height - blockHeight + 1))
+
+            // Fill the block
+            for (let y = startY; y < startY + blockHeight; y++) {
+                for (let x = startX; x < startX + blockWidth; x++) {
+                    solution[y][x] = 1
+                }
             }
-            solution.push(row)
+        }
+
+        // Optionally add some horizontal or vertical lines
+        if (Math.random() < 0.5) {
+            const numLines = 1 + Math.floor(Math.random() * 2)
+            for (let i = 0; i < numLines; i++) {
+                if (Math.random() < 0.5) {
+                    // Horizontal line segment
+                    const y = Math.floor(Math.random() * height)
+                    const startX = Math.floor(Math.random() * (width - 2))
+                    const len = 2 + Math.floor(Math.random() * (width - startX - 1))
+                    for (let x = startX; x < startX + len; x++) {
+                        solution[y][x] = 1
+                    }
+                } else {
+                    // Vertical line segment
+                    const x = Math.floor(Math.random() * width)
+                    const startY = Math.floor(Math.random() * (height - 2))
+                    const len = 2 + Math.floor(Math.random() * (height - startY - 1))
+                    for (let y = startY; y < startY + len; y++) {
+                        solution[y][x] = 1
+                    }
+                }
+            }
+        }
+
+        // Clear some random cells to create gaps (but not too many)
+        const clearCount = Math.floor((width * height) * 0.1 * Math.random())
+        for (let i = 0; i < clearCount; i++) {
+            const x = Math.floor(Math.random() * width)
+            const y = Math.floor(Math.random() * height)
+            solution[y][x] = 0
         }
 
         return solution
