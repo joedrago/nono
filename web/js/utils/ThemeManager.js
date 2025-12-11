@@ -118,19 +118,19 @@ export const THEMES = {
             // Puzzle difficulty backgrounds
             puzzleEasy: 0x43b047, // Luigi green
             puzzleMedium: 0xfbd000, // Coin gold
-            puzzleHard: 0xe52521, // Mario red
+            puzzleHard: 0xc84c0c, // Brick brown (not red, reserved for errors)
             puzzleCompleted: 0x049cd8, // Toad blue
 
             // Cell states
-            cellFilled: 0xe52521, // Mario red
-            cellError: 0x000000, // Black (pit/death)
-            cellMarker: 0x8b6914, // Brick brown (brighter)
-            cellMarkerError: 0xff4444, // Bright red
+            cellFilled: 0xfbd000, // Coin gold (not red, reserved for errors)
+            cellError: 0xe52521, // Mario red for errors
+            cellMarker: 0x2a5f8f, // Darker blue for X marks
+            cellMarkerError: 0xe52521, // Mario red for errors
 
             // Grid
-            gridLine: 0xfbd000, // Gold
-            gridLineMajor: 0xf8a024, // Fire flower orange
-            puzzleBorder: 0xfbd000,
+            gridLine: 0x000000, // Black for contrast on blue cells
+            gridLineMajor: 0xffffff, // White for high contrast major lines
+            puzzleBorder: 0xffffff,
 
             // UI elements
             selectionIndicator: 0x43b047, // Luigi green
@@ -139,11 +139,11 @@ export const THEMES = {
             progressBar: 0x43b047, // Green
 
             // Particles
-            particles: [0xe52521, 0x43b047, 0xfbd000, 0xf8a024, 0x049cd8]
+            particles: [0x43b047, 0xfbd000, 0xf8a024, 0x049cd8, 0xf699cd]
         },
 
-        // Cursor colors for multiplayer (Mario, Luigi, Peach, Toad, Wario, Waluigi, Daisy, Rosalina)
-        cursorColors: [0xe52521, 0x43b047, 0xf699cd, 0x049cd8, 0xffd700, 0x6b3fa0, 0xf8a024, 0x7dd8e8]
+        // Cursor colors for multiplayer (Luigi, Peach, Toad, Wario, Waluigi, Daisy, Rosalina, Mario)
+        cursorColors: [0x43b047, 0xf699cd, 0x049cd8, 0xffd700, 0x6b3fa0, 0xf8a024, 0x7dd8e8, 0xe52521]
     }
 }
 
