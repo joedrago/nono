@@ -14,7 +14,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.saveManager = new SaveManager()
         this.themeManager = new ThemeManager(this.saveManager)
 
-        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Themes", "Change Profile"]
+        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Themes", "Change Profile", "Quit"]
         this.selectedIndex = 0
 
         // Set background color from theme
@@ -61,8 +61,8 @@ export class MainMenuScene extends Phaser.Scene {
 
         // Menu items
         this.menuButtons = []
-        const menuStartY = this.uiScale.percent(40)
-        const menuSpacing = this.uiScale.percent(9)
+        const menuStartY = this.uiScale.percent(38)
+        const menuSpacing = this.uiScale.percent(8)
 
         this.menuItems.forEach((item, i) => {
             const btn = this.createMenuItem(item, menuStartY + i * menuSpacing)
@@ -96,8 +96,8 @@ export class MainMenuScene extends Phaser.Scene {
         const container = this.add.container(this.uiScale.centerX, y)
         const theme = this.themeManager.getTheme()
 
-        const width = this.uiScale.percent(45)
-        const height = this.uiScale.percent(7)
+        const width = this.uiScale.percent(40)
+        const height = this.uiScale.percent(6)
 
         // Background
         const bg = this.add.graphics()
@@ -160,6 +160,9 @@ export class MainMenuScene extends Phaser.Scene {
                     break
                 case 4: // Change Profile
                     this.scene.start("ProfileSelectScene")
+                    break
+                case 5: // Quit
+                    window.close()
                     break
             }
         })
