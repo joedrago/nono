@@ -367,33 +367,40 @@ export class GameScene extends Phaser.Scene {
 
         // Grid lines
         this.gridLines = this.add.graphics()
+
+        // Draw thin lines (not on 5th positions or outer border)
         this.gridLines.lineStyle(1, theme.graphics.gridLine, 0.5)
-
-        for (let x = 0; x <= this.puzzle.width; x++) {
-            const lineX = this.gridOffsetX + x * this.cellSize
-            this.gridLines.moveTo(lineX, this.gridOffsetY)
-            this.gridLines.lineTo(lineX, this.gridOffsetY + this.puzzle.height * this.cellSize)
+        for (let x = 1; x < this.puzzle.width; x++) {
+            if (x % 5 !== 0) {
+                const lineX = this.gridOffsetX + x * this.cellSize
+                this.gridLines.moveTo(lineX, this.gridOffsetY)
+                this.gridLines.lineTo(lineX, this.gridOffsetY + this.puzzle.height * this.cellSize)
+            }
         }
-
-        for (let y = 0; y <= this.puzzle.height; y++) {
-            const lineY = this.gridOffsetY + y * this.cellSize
-            this.gridLines.moveTo(this.gridOffsetX, lineY)
-            this.gridLines.lineTo(this.gridOffsetX + this.puzzle.width * this.cellSize, lineY)
+        for (let y = 1; y < this.puzzle.height; y++) {
+            if (y % 5 !== 0) {
+                const lineY = this.gridOffsetY + y * this.cellSize
+                this.gridLines.moveTo(this.gridOffsetX, lineY)
+                this.gridLines.lineTo(this.gridOffsetX + this.puzzle.width * this.cellSize, lineY)
+            }
         }
-
         this.gridLines.strokePath()
 
-        // Thicker lines every 5 cells
-        this.gridLines.lineStyle(2, theme.graphics.gridLineMajor, 0.8)
-        for (let x = 0; x <= this.puzzle.width; x += 5) {
-            const lineX = this.gridOffsetX + x * this.cellSize
-            this.gridLines.moveTo(lineX, this.gridOffsetY)
-            this.gridLines.lineTo(lineX, this.gridOffsetY + this.puzzle.height * this.cellSize)
+        // Thicker lines every 5 cells and outer border
+        this.gridLines.lineStyle(3, theme.graphics.gridLineMajor, 1)
+        for (let x = 0; x <= this.puzzle.width; x++) {
+            if (x % 5 === 0 || x === this.puzzle.width) {
+                const lineX = this.gridOffsetX + x * this.cellSize
+                this.gridLines.moveTo(lineX, this.gridOffsetY)
+                this.gridLines.lineTo(lineX, this.gridOffsetY + this.puzzle.height * this.cellSize)
+            }
         }
-        for (let y = 0; y <= this.puzzle.height; y += 5) {
-            const lineY = this.gridOffsetY + y * this.cellSize
-            this.gridLines.moveTo(this.gridOffsetX, lineY)
-            this.gridLines.lineTo(this.gridOffsetX + this.puzzle.width * this.cellSize, lineY)
+        for (let y = 0; y <= this.puzzle.height; y++) {
+            if (y % 5 === 0 || y === this.puzzle.height) {
+                const lineY = this.gridOffsetY + y * this.cellSize
+                this.gridLines.moveTo(this.gridOffsetX, lineY)
+                this.gridLines.lineTo(this.gridOffsetX + this.puzzle.width * this.cellSize, lineY)
+            }
         }
         this.gridLines.strokePath()
 
