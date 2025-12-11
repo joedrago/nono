@@ -144,6 +144,78 @@ export const THEMES = {
 
         // Cursor colors for multiplayer (Luigi, Peach, Toad, Wario, Waluigi, Daisy, Rosalina, Mario)
         cursorColors: [0x43b047, 0xf699cd, 0x049cd8, 0xffd700, 0x6b3fa0, 0xf8a024, 0x7dd8e8, 0xe52521]
+    },
+
+    vampire: {
+        id: "vampire",
+        name: "Vampire",
+        description: "Dark and brooding with blood red accents",
+
+        // Font
+        font: "monospace",
+
+        // Text colors (hex strings for Phaser text)
+        text: {
+            title: "#8b0000", // Dark blood red
+            subtitle: "#a0a0a0", // Gray
+            primary: "#e0e0e0", // Light gray
+            secondary: "#b0b0b0", // Medium gray
+            muted: "#606060", // Dark gray
+            instructions: "#808080", // Gray
+            success: "#a0a0a0", // Gray (no green in vampire theme)
+            victory: "#c0c0c0", // Silver
+            warning: "#ff4444", // Bright red for warnings
+            accent: "#8b0000", // Dark blood red
+            highlight: "#c0c0c0", // Silver
+            stat: "#a0a0a0",
+            achievementTitle: "#8b0000", // Dark blood red
+            achievementLocked: "#303030",
+            achievementLockedText: "#505050",
+            achievementLockedDesc: "#404040",
+            hintNormal: "#c0c0c0", // Silver
+            hintComplete: "#505050" // Dark gray
+        },
+
+        // Graphics colors (hex numbers for Phaser graphics)
+        graphics: {
+            // Backgrounds
+            background: 0x0a0a0a, // Near black
+            panelBg: 0x1a1a1a, // Very dark gray
+            cellEmpty: 0x151515, // Dark gray
+            overlayBg: 0x000000,
+            confirmBg: 0x200808, // Very dark red tint
+            progressBarBg: 0x1a1a1a,
+            achievementLocked: 0x101010,
+
+            // Puzzle difficulty backgrounds
+            puzzleEasy: 0x1a1a1a, // Dark gray
+            puzzleMedium: 0x252525, // Slightly lighter
+            puzzleHard: 0x200808, // Dark red tint
+            puzzleCompleted: 0x182018, // Very subtle dark green tint
+
+            // Cell states
+            cellFilled: 0xd0d0d0, // Light gray/silver
+            cellError: 0xff4444, // Bright red for errors
+            cellMarker: 0x505050, // Medium gray
+            cellMarkerError: 0xff4444, // Bright red for errors
+
+            // Grid
+            gridLine: 0x303030, // Dark gray
+            gridLineMajor: 0x8b0000, // Dark blood red for major lines
+            puzzleBorder: 0x8b0000, // Dark blood red
+
+            // UI elements
+            selectionIndicator: 0xc0c0c0, // Silver
+            achievementIndicator: 0x8b0000, // Dark blood red
+            confirmBorder: 0x8b0000, // Dark blood red
+            progressBar: 0x8b0000, // Dark blood red
+
+            // Particles
+            particles: [0xc0c0c0, 0x808080, 0x8b0000, 0xa0a0a0, 0x600000]
+        },
+
+        // Cursor colors for multiplayer (silver, white, gray variations, red last)
+        cursorColors: [0xc0c0c0, 0xffffff, 0x808080, 0xa0a0a0, 0x606060, 0xd0d0d0, 0x909090, 0xff4444]
     }
 }
 
