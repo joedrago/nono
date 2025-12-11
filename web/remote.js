@@ -99,6 +99,34 @@
                     socket.emit("action", { key, state: "released" })
                 })
             })
+
+            // Keyboard event handling
+            const keyMap = {
+                ArrowUp: "up",
+                ArrowDown: "down",
+                ArrowLeft: "left",
+                ArrowRight: "right",
+                Enter: "a",
+                Backspace: "b",
+                Escape: "start",
+                KeyY: "select"
+            }
+
+            document.addEventListener("keydown", (e) => {
+                const key = keyMap[e.code]
+                if (!key) return
+                if (pressedKeys.has(key)) return // Already pressed
+                pressedKeys.add(key)
+                socket.emit("action", { key, state: "pressed" })
+            })
+
+            document.addEventListener("keyup", (e) => {
+                const key = keyMap[e.code]
+                if (!key) return
+                if (!pressedKeys.has(key)) return
+                pressedKeys.delete(key)
+                socket.emit("action", { key, state: "released" })
+            })
         })
     } else {
         // Show the form
