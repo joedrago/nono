@@ -1,6 +1,7 @@
 import { InputManager } from "../utils/InputManager.js"
 import { UIScale } from "../utils/UIScale.js"
 import { SaveManager } from "../utils/SaveManager.js"
+import { ThemeManager } from "../utils/ThemeManager.js"
 import { AchievementManager } from "../utils/AchievementManager.js"
 import { AchievementToast } from "../utils/AchievementToast.js"
 
@@ -18,8 +19,12 @@ export class VictoryScene extends Phaser.Scene {
         this.uiScale = new UIScale(this)
         this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
+        this.themeManager = new ThemeManager(this.saveManager)
         this.achievementManager = new AchievementManager(this.saveManager)
         this.achievementToast = new AchievementToast(this, this.uiScale)
+
+        // Set background color from theme
+        this.cameras.main.setBackgroundColor(this.themeManager.graphics.background)
 
         // Check for achievements
         this.achievementManager.checkFirstSolve()
@@ -45,21 +50,22 @@ export class VictoryScene extends Phaser.Scene {
 
     createUI() {
         this.uiContainer = this.add.container(0, 0)
+        const theme = this.themeManager.getTheme()
 
         // Victory title
         this.title = this.add.text(this.uiScale.centerX, this.uiScale.percent(15), "COMPLETE!", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.title * 1.2 + "px",
-            color: "#00ff88"
+            color: theme.text.victory
         })
         this.title.setOrigin(0.5)
         this.uiContainer.add(this.title)
 
         // Puzzle name
         this.puzzleName = this.add.text(this.uiScale.centerX, this.uiScale.percent(28), this.puzzle.name, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.large + "px",
-            color: "#e0e0ff"
+            color: theme.text.primary
         })
         this.puzzleName.setOrigin(0.5)
         this.uiContainer.add(this.puzzleName)
@@ -71,16 +77,16 @@ export class VictoryScene extends Phaser.Scene {
         if (this.infiniteMode) {
             const solved = this.saveManager.getInfiniteSolved()
             this.statsText = this.add.text(this.uiScale.centerX, this.uiScale.percent(78), `Infinite Puzzles Solved: ${solved}`, {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.medium + "px",
-                color: "#aaaaff"
+                color: theme.text.stat
             })
         } else {
             const completion = this.saveManager.getCompletionPercent()
             this.statsText = this.add.text(this.uiScale.centerX, this.uiScale.percent(78), `Overall Progress: ${completion}%`, {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.medium + "px",
-                color: completion === 100 ? "#00ff00" : "#aaaaff"
+                color: completion === 100 ? theme.text.success : theme.text.stat
             })
         }
         this.statsText.setOrigin(0.5)
@@ -88,15 +94,16 @@ export class VictoryScene extends Phaser.Scene {
 
         // Instructions
         this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[A] or [B] Continue", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: "#8888aa"
+            color: theme.text.instructions
         })
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
     }
 
     drawPuzzleImage() {
+        const theme = this.themeManager.getTheme()
         const maxSize = this.uiScale.percent(35)
         const cellSize = Math.min(maxSize / this.puzzle.width, maxSize / this.puzzle.height)
 
@@ -108,21 +115,21 @@ export class VictoryScene extends Phaser.Scene {
         const graphics = this.add.graphics()
 
         // Background
-        graphics.fillStyle(0x222244, 1)
+        graphics.fillStyle(theme.graphics.cellEmpty, 1)
         graphics.fillRect(startX - 4, startY - 4, gridWidth + 8, gridHeight + 8)
 
         // Draw filled cells
         for (let y = 0; y < this.puzzle.height; y++) {
             for (let x = 0; x < this.puzzle.width; x++) {
                 if (this.puzzle.solution[y][x] === 1) {
-                    graphics.fillStyle(0x4488ff, 1)
+                    graphics.fillStyle(theme.graphics.cellFilled, 1)
                     graphics.fillRect(startX + x * cellSize + 1, startY + y * cellSize + 1, cellSize - 2, cellSize - 2)
                 }
             }
         }
 
         // Border
-        graphics.lineStyle(2, 0x6666ff, 1)
+        graphics.lineStyle(2, theme.graphics.puzzleBorder, 1)
         graphics.strokeRect(startX - 4, startY - 4, gridWidth + 8, gridHeight + 8)
 
         this.uiContainer.add(graphics)
@@ -131,7 +138,8 @@ export class VictoryScene extends Phaser.Scene {
     createParticles() {
         // Simple particle-like effect using graphics
         this.particles = []
-        const colors = [0x00ff88, 0x4488ff, 0xff88ff, 0xffff00, 0x00ffff]
+        const theme = this.themeManager.getTheme()
+        const colors = theme.graphics.particles
 
         for (let i = 0; i < 30; i++) {
             const particle = this.add.graphics()

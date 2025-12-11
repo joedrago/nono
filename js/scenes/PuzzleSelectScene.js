@@ -1,6 +1,7 @@
 import { InputManager } from "../utils/InputManager.js"
 import { UIScale } from "../utils/UIScale.js"
 import { SaveManager } from "../utils/SaveManager.js"
+import { ThemeManager } from "../utils/ThemeManager.js"
 
 export class PuzzleSelectScene extends Phaser.Scene {
     constructor() {
@@ -15,6 +16,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.uiScale = new UIScale(this)
         this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
+        this.themeManager = new ThemeManager(this.saveManager)
 
         this.difficulties = ["easy", "medium", "hard"]
         this.difficultyLabels = { easy: "Easy (5x5)", medium: "Medium (10x10)", hard: "Hard (15x15)" }
@@ -22,6 +24,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.gridRows = 2
         this.selectedIndex = 0
         this.scrollOffset = 0 // How many columns scrolled to the right
+
+        // Set background color from theme
+        this.cameras.main.setBackgroundColor(this.themeManager.graphics.background)
 
         // Get puzzles from registry and sort them
         this.allPuzzles = this.registry.get("puzzles") || []
@@ -49,12 +54,13 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
     createUI() {
         this.uiContainer = this.add.container(0, 0)
+        const theme = this.themeManager.getTheme()
 
         // Title
         this.title = this.add.text(this.uiScale.centerX, this.uiScale.percent(8), "SELECT PUZZLE", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.large + "px",
-            color: "#e0e0ff"
+            color: theme.text.primary
         })
         this.title.setOrigin(0.5)
         this.uiContainer.add(this.title)
@@ -73,9 +79,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         // Instructions
         this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[A] Select   [B] Back", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: "#8888aa"
+            color: theme.text.instructions
         })
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
@@ -83,12 +89,13 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
     createInfiniteUI() {
         this.uiContainer = this.add.container(0, 0)
+        const theme = this.themeManager.getTheme()
 
         // Title
         this.title = this.add.text(this.uiScale.centerX, this.uiScale.percent(10), "INFINITE MODE", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.title + "px",
-            color: "#ff88ff"
+            color: theme.text.accent
         })
         this.title.setOrigin(0.5)
         this.uiContainer.add(this.title)
@@ -98,9 +105,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         const total = solvedCounts.easy + solvedCounts.medium + solvedCounts.hard
 
         this.solvedText = this.add.text(this.uiScale.centerX, this.uiScale.percent(22), `Total Solved: ${total}`, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.medium + "px",
-            color: "#aaaaff"
+            color: theme.text.highlight
         })
         this.solvedText.setOrigin(0.5)
         this.uiContainer.add(this.solvedText)
@@ -122,50 +129,51 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         // Instructions
         this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Start   [B] Back", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: "#8888aa"
+            color: theme.text.instructions
         })
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
     }
 
-    createDiffButton(text, solvedCount, y, index) {
+    createDiffButton(text, solvedCount, y, _index) {
         const container = this.add.container(this.uiScale.centerX, y)
+        const theme = this.themeManager.getTheme()
 
         const width = this.uiScale.percent(45)
         const height = this.uiScale.percent(11)
 
         const bg = this.add.graphics()
-        bg.fillStyle(0x333355, 0.8)
+        bg.fillStyle(theme.graphics.panelBg, 0.8)
         bg.fillRoundedRect(-width / 2, -height / 2, width, height, 8)
         container.add(bg)
 
         // Difficulty label
         const label = this.add.text(0, -this.uiScale.percent(1.5), text, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.medium + "px",
-            color: "#e0e0ff"
+            color: theme.text.primary
         })
         label.setOrigin(0.5)
         container.add(label)
 
         // Solved count
         const countText = this.add.text(0, this.uiScale.percent(2.5), `Solved: ${solvedCount}`, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: solvedCount > 0 ? "#88ff88" : "#888888"
+            color: solvedCount > 0 ? theme.text.success : theme.text.muted
         })
         countText.setOrigin(0.5)
         container.add(countText)
 
         const indicator = this.add.graphics()
-        indicator.lineStyle(3, 0x00ff00, 1)
+        indicator.lineStyle(3, theme.graphics.selectionIndicator, 1)
         indicator.strokeRoundedRect(-width / 2 - 4, -height / 2 - 4, width + 8, height + 8, 10)
         indicator.setVisible(false)
         container.add(indicator)
 
-        return { container, indicator, index }
+        return { container, indicator }
     }
 
     updateInfiniteSelection() {
@@ -209,19 +217,14 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
     createPuzzleItem(puzzle, x, y, size, index) {
         const container = this.add.container(x, y)
+        const theme = this.themeManager.getTheme()
 
         // Background - color based on difficulty
         const bg = this.add.graphics()
         const completed = this.saveManager.isPuzzleCompleted(puzzle.id)
-        let bgColor = 0x333355
+        let bgColor = theme.graphics.panelBg
         if (completed) {
-            bgColor = 0x225522
-        } else if (puzzle.difficulty === "easy") {
-            bgColor = 0x333366
-        } else if (puzzle.difficulty === "medium") {
-            bgColor = 0x444455
-        } else if (puzzle.difficulty === "hard") {
-            bgColor = 0x553344
+            bgColor = 0x225522 // Keep green for completed
         }
         bg.fillStyle(bgColor, 0.9)
         bg.fillRoundedRect(-size / 2, -size / 2, size, size, 6)
@@ -229,18 +232,18 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         // Puzzle name
         const name = this.add.text(0, -size / 6, puzzle.name, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: "#e0e0ff"
+            color: theme.text.primary
         })
         name.setOrigin(0.5)
         container.add(name)
 
         // Size indicator
         const sizeText = this.add.text(0, size / 6, `${puzzle.width}x${puzzle.height}`, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.tiny + "px",
-            color: "#888888"
+            color: theme.text.muted
         })
         sizeText.setOrigin(0.5)
         container.add(sizeText)
@@ -248,9 +251,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         // Checkmark if completed
         if (completed) {
             const check = this.add.text(size / 2 - this.uiScale.percent(2), -size / 2 + this.uiScale.percent(2), "✓", {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.medium + "px",
-                color: "#00ff00"
+                color: theme.text.success
             })
             check.setOrigin(0.5)
             container.add(check)
@@ -258,7 +261,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         // Selection indicator
         const indicator = this.add.graphics()
-        indicator.lineStyle(3, 0x00ff00, 1)
+        indicator.lineStyle(3, theme.graphics.selectionIndicator, 1)
         indicator.strokeRoundedRect(-size / 2 - 4, -size / 2 - 4, size + 8, size + 8, 8)
         indicator.setVisible(false)
         container.add(indicator)
@@ -273,6 +276,8 @@ export class PuzzleSelectScene extends Phaser.Scene {
     }
 
     updateScrollIndicator() {
+        const theme = this.themeManager.getTheme()
+
         // Remove old indicators
         if (this.leftArrow) this.leftArrow.destroy()
         if (this.rightArrow) this.rightArrow.destroy()
@@ -282,9 +287,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         // Left arrow if we can scroll left
         if (this.scrollOffset > 0) {
             this.leftArrow = this.add.text(this.uiScale.percent(3), arrowY, "◀", {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.large + "px",
-                color: "#8888aa"
+                color: theme.text.instructions
             })
             this.leftArrow.setOrigin(0.5)
             this.uiContainer.add(this.leftArrow)
@@ -293,9 +298,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         // Right arrow if we can scroll right
         if (this.scrollOffset + this.visibleCols < this.totalCols) {
             this.rightArrow = this.add.text(this.uiScale.width - this.uiScale.percent(3), arrowY, "▶", {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.large + "px",
-                color: "#8888aa"
+                color: theme.text.instructions
             })
             this.rightArrow.setOrigin(0.5)
             this.uiContainer.add(this.rightArrow)

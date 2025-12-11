@@ -1,6 +1,7 @@
 import { InputManager } from "../utils/InputManager.js"
 import { UIScale } from "../utils/UIScale.js"
 import { SaveManager } from "../utils/SaveManager.js"
+import { ThemeManager } from "../utils/ThemeManager.js"
 import { NonogramValidator } from "../utils/NonogramValidator.js"
 
 export class GameScene extends Phaser.Scene {
@@ -18,6 +19,7 @@ export class GameScene extends Phaser.Scene {
         this.uiScale = new UIScale(this)
         this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
+        this.themeManager = new ThemeManager(this.saveManager)
 
         // Cell states: 0 = empty, 1 = filled, 2 = marked (X)
         this.EMPTY = 0
@@ -30,6 +32,9 @@ export class GameScene extends Phaser.Scene {
         // Load settings from profile
         this.showErrors = this.saveManager.getShowErrors()
         this.dimHints = this.saveManager.getDimHints()
+
+        // Set background color from theme
+        this.cameras.main.setBackgroundColor(this.themeManager.graphics.background)
 
         // Track drag state per gamepad for hold-to-fill behavior
         // Maps gamepadIndex -> { sourceState, targetState }
@@ -195,7 +200,7 @@ export class GameScene extends Phaser.Scene {
         this.cursors.set(-1, {
             x: Math.floor(this.puzzle.width / 2),
             y: Math.floor(this.puzzle.height / 2),
-            color: this.inputManager.getCursorColor(-1)
+            color: this.themeManager.getCursorColor(-1)
         })
     }
 
@@ -204,7 +209,7 @@ export class GameScene extends Phaser.Scene {
             this.cursors.set(gamepadIndex, {
                 x: Math.floor(this.puzzle.width / 2),
                 y: Math.floor(this.puzzle.height / 2),
-                color: this.inputManager.getCursorColor(gamepadIndex)
+                color: this.themeManager.getCursorColor(gamepadIndex)
             })
         }
         return this.cursors.get(gamepadIndex)
@@ -212,6 +217,7 @@ export class GameScene extends Phaser.Scene {
 
     createUI() {
         this.uiContainer = this.add.container(0, 0)
+        const theme = this.themeManager.getTheme()
 
         // Calculate cell size based on puzzle dimensions
         this.cellSize = this.uiScale.getCellSize(this.puzzle.width, this.puzzle.height)
@@ -236,9 +242,9 @@ export class GameScene extends Phaser.Scene {
 
         // Puzzle name
         this.nameText = this.add.text(this.uiScale.percent(3), this.uiScale.percent(3), this.puzzle.name, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.medium + "px",
-            color: "#aaaacc"
+            color: theme.text.subtitle
         })
         this.uiContainer.add(this.nameText)
 
@@ -248,9 +254,9 @@ export class GameScene extends Phaser.Scene {
             this.uiScale.percent(95),
             "[A] Fill   [B] Mark X   [Start] Menu",
             {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.small + "px",
-                color: "#8888aa"
+                color: theme.text.instructions
             }
         )
         this.instructions.setOrigin(0.5)
@@ -302,6 +308,7 @@ export class GameScene extends Phaser.Scene {
 
     drawRowHints() {
         this.rowHintTexts = []
+        const theme = this.themeManager.getTheme()
 
         for (let y = 0; y < this.puzzle.height; y++) {
             const hints = this.rowHints[y]
@@ -310,9 +317,9 @@ export class GameScene extends Phaser.Scene {
             const isComplete = this.dimHints && this.isRowHintComplete(y)
 
             const text = this.add.text(this.gridOffsetX - this.uiScale.percent(2), yPos, hintStr, {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.cellSize * 0.5 + "px",
-                color: isComplete ? "#666688" : "#ccccff"
+                color: isComplete ? theme.text.hintComplete : theme.text.hintNormal
             })
             text.setOrigin(1, 0.5)
             this.uiContainer.add(text)
@@ -322,6 +329,7 @@ export class GameScene extends Phaser.Scene {
 
     drawColHints() {
         this.colHintTexts = []
+        const theme = this.themeManager.getTheme()
 
         for (let x = 0; x < this.puzzle.width; x++) {
             const hints = this.colHints[x]
@@ -330,9 +338,9 @@ export class GameScene extends Phaser.Scene {
             const isComplete = this.dimHints && this.isColHintComplete(x)
 
             const text = this.add.text(xPos, this.gridOffsetY - this.uiScale.percent(2), hintStr, {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.cellSize * 0.5 + "px",
-                color: isComplete ? "#666688" : "#ccccff",
+                color: isComplete ? theme.text.hintComplete : theme.text.hintNormal,
                 align: "center"
             })
             text.setOrigin(0.5, 1)
@@ -343,6 +351,7 @@ export class GameScene extends Phaser.Scene {
 
     drawGrid() {
         this.cellGraphics = []
+        const theme = this.themeManager.getTheme()
 
         for (let y = 0; y < this.puzzle.height; y++) {
             const row = []
@@ -360,7 +369,7 @@ export class GameScene extends Phaser.Scene {
 
         // Grid lines
         this.gridLines = this.add.graphics()
-        this.gridLines.lineStyle(1, 0x666688, 0.5)
+        this.gridLines.lineStyle(1, theme.graphics.gridLine, 0.5)
 
         for (let x = 0; x <= this.puzzle.width; x++) {
             const lineX = this.gridOffsetX + x * this.cellSize
@@ -377,7 +386,7 @@ export class GameScene extends Phaser.Scene {
         this.gridLines.strokePath()
 
         // Thicker lines every 5 cells
-        this.gridLines.lineStyle(2, 0x8888aa, 0.8)
+        this.gridLines.lineStyle(2, theme.graphics.gridLineMajor, 0.8)
         for (let x = 0; x <= this.puzzle.width; x += 5) {
             const lineX = this.gridOffsetX + x * this.cellSize
             this.gridLines.moveTo(lineX, this.gridOffsetY)
@@ -395,6 +404,7 @@ export class GameScene extends Phaser.Scene {
 
     drawCell(graphics, screenX, screenY, state, gridX, gridY) {
         graphics.clear()
+        const theme = this.themeManager.getTheme()
 
         const padding = 2
         const size = this.cellSize - padding * 2
@@ -403,17 +413,17 @@ export class GameScene extends Phaser.Scene {
         const isError = this.showErrors && state === this.FILLED && this.puzzle.solution[gridY][gridX] === 0
 
         if (state === this.EMPTY) {
-            graphics.fillStyle(0x222244, 1)
+            graphics.fillStyle(theme.graphics.cellEmpty, 1)
             graphics.fillRect(screenX + padding, screenY + padding, size, size)
         } else if (state === this.FILLED) {
-            // Show errors in red/orange, correct fills in blue
-            graphics.fillStyle(isError ? 0xff4444 : 0x4488ff, 1)
+            // Show errors in red/orange, correct fills in theme color
+            graphics.fillStyle(isError ? theme.graphics.cellError : theme.graphics.cellFilled, 1)
             graphics.fillRect(screenX + padding, screenY + padding, size, size)
         } else if (state === this.MARKED) {
-            graphics.fillStyle(0x222244, 1)
+            graphics.fillStyle(theme.graphics.cellEmpty, 1)
             graphics.fillRect(screenX + padding, screenY + padding, size, size)
             // Draw X
-            graphics.lineStyle(2, 0xff6666, 1)
+            graphics.lineStyle(2, theme.graphics.cellMarker, 1)
             graphics.moveTo(screenX + padding + 4, screenY + padding + 4)
             graphics.lineTo(screenX + padding + size - 4, screenY + padding + size - 4)
             graphics.moveTo(screenX + padding + size - 4, screenY + padding + 4)
@@ -455,17 +465,18 @@ export class GameScene extends Phaser.Scene {
 
     updateHintColors() {
         if (!this.dimHints) return
+        const theme = this.themeManager.getTheme()
 
         // Update row hints
         for (let y = 0; y < this.puzzle.height; y++) {
             const isComplete = this.isRowHintComplete(y)
-            this.rowHintTexts[y].setColor(isComplete ? "#666688" : "#ccccff")
+            this.rowHintTexts[y].setColor(isComplete ? theme.text.hintComplete : theme.text.hintNormal)
         }
 
         // Update column hints
         for (let x = 0; x < this.puzzle.width; x++) {
             const isComplete = this.isColHintComplete(x)
-            this.colHintTexts[x].setColor(isComplete ? "#666688" : "#ccccff")
+            this.colHintTexts[x].setColor(isComplete ? theme.text.hintComplete : theme.text.hintNormal)
         }
     }
 
@@ -625,16 +636,17 @@ export class GameScene extends Phaser.Scene {
     showPauseMenu() {
         this.paused = true
         this.pauseIndex = 0
+        const theme = this.themeManager.getTheme()
 
         this.pauseOverlay = this.add.graphics()
-        this.pauseOverlay.fillStyle(0x000000, 0.7)
+        this.pauseOverlay.fillStyle(theme.graphics.overlayBg, 0.7)
         this.pauseOverlay.fillRect(0, 0, this.uiScale.width, this.uiScale.height)
 
         const boxWidth = this.uiScale.percent(50)
         const boxHeight = this.uiScale.percent(48)
 
         this.pauseBox = this.add.graphics()
-        this.pauseBox.fillStyle(0x333355, 1)
+        this.pauseBox.fillStyle(theme.graphics.panelBg, 1)
         this.pauseBox.fillRoundedRect(
             this.uiScale.centerX - boxWidth / 2,
             this.uiScale.centerY - boxHeight / 2,
@@ -644,9 +656,9 @@ export class GameScene extends Phaser.Scene {
         )
 
         this.pauseTitle = this.add.text(this.uiScale.centerX, this.uiScale.centerY - this.uiScale.percent(10), "PAUSED", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.large + "px",
-            color: "#e0e0ff"
+            color: theme.text.primary
         })
         this.pauseTitle.setOrigin(0.5)
 
@@ -663,9 +675,9 @@ export class GameScene extends Phaser.Scene {
 
         this.pauseItems.forEach((item, i) => {
             const text = this.add.text(this.uiScale.centerX, startY + i * spacing, item, {
-                fontFamily: "monospace",
+                fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.medium + "px",
-                color: "#aaaacc"
+                color: theme.text.secondary
             })
             text.setOrigin(0.5)
             this.pauseTexts.push(text)
@@ -675,8 +687,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     updatePauseMenu() {
+        const theme = this.themeManager.getTheme()
         this.pauseTexts.forEach((text, i) => {
-            text.setColor(i === this.pauseIndex ? "#00ff00" : "#aaaacc")
+            text.setColor(i === this.pauseIndex ? theme.text.success : theme.text.secondary)
         })
         // Update the toggle texts
         if (this.pauseTexts[1]) {

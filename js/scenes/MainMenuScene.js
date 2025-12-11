@@ -1,6 +1,7 @@
 import { InputManager } from "../utils/InputManager.js"
 import { UIScale } from "../utils/UIScale.js"
 import { SaveManager } from "../utils/SaveManager.js"
+import { ThemeManager } from "../utils/ThemeManager.js"
 
 export class MainMenuScene extends Phaser.Scene {
     constructor() {
@@ -11,9 +12,13 @@ export class MainMenuScene extends Phaser.Scene {
         this.uiScale = new UIScale(this)
         this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
+        this.themeManager = new ThemeManager(this.saveManager)
 
         this.menuItems = ["Play", "Infinite Mode", "Achievements", "Themes", "Change Profile"]
         this.selectedIndex = 0
+
+        // Set background color from theme
+        this.cameras.main.setBackgroundColor(this.themeManager.graphics.background)
 
         this.createUI()
         this.setupInput()
@@ -24,21 +29,22 @@ export class MainMenuScene extends Phaser.Scene {
 
     createUI() {
         this.uiContainer = this.add.container(0, 0)
+        const theme = this.themeManager.getTheme()
 
         // Title
         this.title = this.add.text(this.uiScale.centerX, this.uiScale.percent(12), "NONO", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.title * 1.5 + "px",
-            color: "#8888ff"
+            color: theme.text.title
         })
         this.title.setOrigin(0.5)
         this.uiContainer.add(this.title)
 
         // Subtitle
         this.subtitle = this.add.text(this.uiScale.centerX, this.uiScale.percent(22), "Nonogram Puzzles", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.medium + "px",
-            color: "#aaaacc"
+            color: theme.text.subtitle
         })
         this.subtitle.setOrigin(0.5)
         this.uiContainer.add(this.subtitle)
@@ -46,9 +52,9 @@ export class MainMenuScene extends Phaser.Scene {
         // Completion percentage
         const completion = this.saveManager.getCompletionPercent()
         this.completionText = this.add.text(this.uiScale.centerX, this.uiScale.percent(30), `${completion}% Complete`, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: completion === 100 ? "#00ff00" : "#888888"
+            color: completion === 100 ? theme.text.success : theme.text.muted
         })
         this.completionText.setOrigin(0.5)
         this.uiContainer.add(this.completionText)
@@ -67,18 +73,18 @@ export class MainMenuScene extends Phaser.Scene {
         // Profile indicator
         const slot = this.saveManager.getCurrentSlot()
         this.profileText = this.add.text(this.uiScale.percent(3), this.uiScale.percent(95), `Profile ${slot}`, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: "#666688"
+            color: theme.text.muted
         })
         this.profileText.setOrigin(0, 0.5)
         this.uiContainer.add(this.profileText)
 
         // Instructions
         this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Select   [B] Back", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: "#8888aa"
+            color: theme.text.instructions
         })
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
@@ -88,28 +94,29 @@ export class MainMenuScene extends Phaser.Scene {
 
     createMenuItem(text, y) {
         const container = this.add.container(this.uiScale.centerX, y)
+        const theme = this.themeManager.getTheme()
 
         const width = this.uiScale.percent(45)
         const height = this.uiScale.percent(7)
 
         // Background
         const bg = this.add.graphics()
-        bg.fillStyle(0x333355, 0.8)
+        bg.fillStyle(theme.graphics.panelBg, 0.8)
         bg.fillRoundedRect(-width / 2, -height / 2, width, height, 8)
         container.add(bg)
 
         // Text
         const label = this.add.text(0, 0, text, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.medium + "px",
-            color: "#e0e0ff"
+            color: theme.text.primary
         })
         label.setOrigin(0.5)
         container.add(label)
 
         // Selection indicator
         const indicator = this.add.graphics()
-        indicator.lineStyle(3, 0x00ff00, 1)
+        indicator.lineStyle(3, theme.graphics.selectionIndicator, 1)
         indicator.strokeRoundedRect(-width / 2 - 4, -height / 2 - 4, width + 8, height + 8, 10)
         indicator.setVisible(false)
         container.add(indicator)

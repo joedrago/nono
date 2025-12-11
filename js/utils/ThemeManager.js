@@ -41,6 +41,7 @@ export const THEMES = {
             overlayBg: 0x000000,
             confirmBg: 0x442244,
             progressBarBg: 0x222244,
+            achievementLocked: 0x222233,
 
             // Cell states
             cellFilled: 0x4488ff,
@@ -64,6 +65,71 @@ export const THEMES = {
 
         // Cursor colors for multiplayer
         cursorColors: [0x00ff00, 0xff6600, 0x00ffff, 0xff00ff]
+    },
+
+    superMario: {
+        id: "superMario",
+        name: "Super Mario",
+        description: "Inspired by the Mushroom Kingdom",
+
+        // Font
+        font: "monospace",
+
+        // Text colors (hex strings for Phaser text)
+        text: {
+            title: "#e52521", // Mario red
+            subtitle: "#fbd000", // Coin gold
+            primary: "#ffffff",
+            secondary: "#fbd000",
+            muted: "#92d050", // Pipe green muted
+            instructions: "#049cd8", // Mario blue
+            success: "#43b047", // Luigi/1-up green
+            victory: "#fbd000", // Coin gold
+            warning: "#e52521", // Mario red
+            accent: "#f8a024", // Fire flower orange
+            highlight: "#fbd000",
+            stat: "#049cd8",
+            achievementTitle: "#fbd000",
+            achievementLocked: "#5c3c0d", // Brick brown dark
+            achievementLockedText: "#8b6914",
+            achievementLockedDesc: "#6b5111",
+            hintNormal: "#ffffff",
+            hintComplete: "#5c3c0d"
+        },
+
+        // Graphics colors (hex numbers for Phaser graphics)
+        graphics: {
+            // Backgrounds
+            background: 0x5c94fc, // Sky blue
+            panelBg: 0xc84c0c, // Brick orange-brown
+            cellEmpty: 0x049cd8, // Question block blue tint
+            overlayBg: 0x000000,
+            confirmBg: 0x8b0000, // Dark red
+            progressBarBg: 0x5c3c0d, // Brick brown
+            achievementLocked: 0x3d2817, // Dark brick
+
+            // Cell states
+            cellFilled: 0xe52521, // Mario red
+            cellError: 0x000000, // Black (pit/death)
+            cellMarker: 0x43b047, // Luigi green
+
+            // Grid
+            gridLine: 0xfbd000, // Gold
+            gridLineMajor: 0xf8a024, // Fire flower orange
+            puzzleBorder: 0xfbd000,
+
+            // UI elements
+            selectionIndicator: 0x43b047, // Luigi green
+            achievementIndicator: 0xfbd000, // Coin gold
+            confirmBorder: 0xe52521,
+            progressBar: 0x43b047, // Green
+
+            // Particles
+            particles: [0xe52521, 0x43b047, 0xfbd000, 0xf8a024, 0x049cd8]
+        },
+
+        // Cursor colors for multiplayer (Mario, Luigi, Peach, Toad)
+        cursorColors: [0xe52521, 0x43b047, 0xf699cd, 0x049cd8]
     }
 }
 

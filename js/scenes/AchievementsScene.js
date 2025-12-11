@@ -1,6 +1,7 @@
 import { InputManager } from "../utils/InputManager.js"
 import { UIScale } from "../utils/UIScale.js"
 import { SaveManager } from "../utils/SaveManager.js"
+import { ThemeManager } from "../utils/ThemeManager.js"
 import { AchievementManager } from "../utils/AchievementManager.js"
 
 export class AchievementsScene extends Phaser.Scene {
@@ -12,12 +13,16 @@ export class AchievementsScene extends Phaser.Scene {
         this.uiScale = new UIScale(this)
         this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
+        this.themeManager = new ThemeManager(this.saveManager)
         this.achievementManager = new AchievementManager(this.saveManager)
 
         this.gridCols = 2
         this.selectedIndex = 0
 
         this.achievements = this.achievementManager.getAllAchievements()
+
+        // Set background color from theme
+        this.cameras.main.setBackgroundColor(this.themeManager.graphics.background)
 
         this.createUI()
         this.setupInput()
@@ -27,12 +32,13 @@ export class AchievementsScene extends Phaser.Scene {
 
     createUI() {
         this.uiContainer = this.add.container(0, 0)
+        const theme = this.themeManager.getTheme()
 
         // Title
         this.title = this.add.text(this.uiScale.centerX, this.uiScale.percent(8), "ACHIEVEMENTS", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.large + "px",
-            color: "#ffdd00"
+            color: theme.text.achievementTitle
         })
         this.title.setOrigin(0.5)
         this.uiContainer.add(this.title)
@@ -41,9 +47,9 @@ export class AchievementsScene extends Phaser.Scene {
         const earned = this.achievementManager.getEarnedCount()
         const total = this.achievementManager.getTotalCount()
         this.progressText = this.add.text(this.uiScale.centerX, this.uiScale.percent(15), `${earned} / ${total} Unlocked`, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.medium + "px",
-            color: earned === total ? "#00ff00" : "#aaaaaa"
+            color: earned === total ? theme.text.success : theme.text.muted
         })
         this.progressText.setOrigin(0.5)
         this.uiContainer.add(this.progressText)
@@ -53,9 +59,9 @@ export class AchievementsScene extends Phaser.Scene {
 
         // Instructions
         this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[B] Back", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: "#8888aa"
+            color: theme.text.instructions
         })
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
@@ -91,21 +97,22 @@ export class AchievementsScene extends Phaser.Scene {
         this.updateSelection()
     }
 
-    createAchievementItem(achievement, x, y, width, height, index) {
+    createAchievementItem(achievement, x, y, width, height, _index) {
         const container = this.add.container(x, y)
+        const theme = this.themeManager.getTheme()
 
         // Background
         const bg = this.add.graphics()
-        bg.fillStyle(achievement.earned ? 0x333344 : 0x222233, 0.9)
+        bg.fillStyle(achievement.earned ? theme.graphics.panelBg : theme.graphics.achievementLocked, 0.9)
         bg.fillRoundedRect(-width / 2, -height / 2, width, height, 6)
         container.add(bg)
 
         // Star
         const starX = -width / 2 + this.uiScale.percent(4)
         const star = this.add.text(starX, 0, "★", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.xlarge + "px",
-            color: achievement.earned ? "#ffdd00" : "#444444"
+            color: achievement.earned ? theme.text.achievementTitle : theme.text.achievementLocked
         })
         star.setOrigin(0.5)
         container.add(star)
@@ -113,18 +120,18 @@ export class AchievementsScene extends Phaser.Scene {
         // Title
         const titleX = -width / 2 + this.uiScale.percent(9)
         const title = this.add.text(titleX, -this.uiScale.percent(2.5), achievement.title, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
-            color: achievement.earned ? "#ffffff" : "#888888"
+            color: achievement.earned ? theme.text.primary : theme.text.achievementLockedText
         })
         title.setOrigin(0, 0.5)
         container.add(title)
 
         // Description
         const desc = this.add.text(titleX, this.uiScale.percent(2.5), achievement.description, {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.tiny + "px",
-            color: achievement.earned ? "#aaaaaa" : "#666666",
+            color: achievement.earned ? theme.text.muted : theme.text.achievementLockedDesc,
             wordWrap: { width: width - this.uiScale.percent(12) }
         })
         desc.setOrigin(0, 0.5)
@@ -132,12 +139,12 @@ export class AchievementsScene extends Phaser.Scene {
 
         // Selection indicator
         const indicator = this.add.graphics()
-        indicator.lineStyle(3, 0xffdd00, 1)
+        indicator.lineStyle(3, theme.graphics.achievementIndicator, 1)
         indicator.strokeRoundedRect(-width / 2 - 4, -height / 2 - 4, width + 8, height + 8, 8)
         indicator.setVisible(false)
         container.add(indicator)
 
-        return { container, indicator, achievement, index }
+        return { container, indicator, achievement }
     }
 
     updateSelection() {

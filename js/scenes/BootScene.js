@@ -1,6 +1,7 @@
 import { UIScale } from "../utils/UIScale.js"
 import { AssetGenerator } from "../utils/AssetGenerator.js"
 import { SaveManager } from "../utils/SaveManager.js"
+import { ThemeManager } from "../utils/ThemeManager.js"
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -9,6 +10,12 @@ export class BootScene extends Phaser.Scene {
 
     preload() {
         this.uiScale = new UIScale(this)
+        // Use ThemeManager with null saveManager to get default classic theme
+        this.themeManager = new ThemeManager(null)
+        const theme = this.themeManager.getTheme()
+
+        // Set background color from theme
+        this.cameras.main.setBackgroundColor(theme.graphics.background)
 
         // Create loading bar
         const width = this.scale.width
@@ -19,21 +26,21 @@ export class BootScene extends Phaser.Scene {
         const progressBox = this.add.graphics()
         const progressBar = this.add.graphics()
 
-        progressBox.fillStyle(0x222244, 0.8)
+        progressBox.fillStyle(theme.graphics.progressBarBg, 0.8)
         progressBox.fillRect(width / 2 - barWidth / 2 - 10, height / 2 - barHeight / 2 - 10, barWidth + 20, barHeight + 20)
 
         // Loading text
         const loadingText = this.add.text(width / 2, height / 2 - barHeight - 30, "Loading...", {
-            fontFamily: "monospace",
+            fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.medium + "px",
-            color: "#e0e0ff"
+            color: theme.text.primary
         })
         loadingText.setOrigin(0.5)
 
         // Progress bar update
         this.load.on("progress", (value) => {
             progressBar.clear()
-            progressBar.fillStyle(0x6666ff, 1)
+            progressBar.fillStyle(theme.graphics.progressBar, 1)
             progressBar.fillRect(width / 2 - barWidth / 2, height / 2 - barHeight / 2, barWidth * value, barHeight)
         })
 
