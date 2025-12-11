@@ -3,8 +3,9 @@
     "version": "1.0.0",
     "description": "A retro-styled nonogram puzzle game built with Phaser 3, controlled via gamepad",
     "scripts": {
-        "format": "prettier --write \"js/**/*.js\"",
-        "lint": "eslint js --ignore-pattern js/lib/"
+        "start": "node server.js",
+        "format": "prettier --write \"web/js/**/*.js\"",
+        "lint": "eslint web/js --ignore-pattern web/js/lib/"
     },
     "devDependencies": {
         "eslint": "^9.39.1",
@@ -25,5 +26,9 @@
         "retro"
     ],
     "author": "",
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "express": "^5.2.1",
+        "socket.io": "^4.8.1"
+    }
 }

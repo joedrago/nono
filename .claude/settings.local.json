@@ -9,7 +9,9 @@
       "Bash(npm run format:*)",
       "Bash(curl:*)",
       "Bash(open index.html)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ]
   },
   "sandbox": {

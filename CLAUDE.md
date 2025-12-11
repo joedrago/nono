@@ -4,7 +4,7 @@ This document provides context for AI assistants working on this codebase.
 
 ## Project Overview
 
-Nono is a retro-styled nonogram puzzle game built with Phaser 3. The game is designed for gamepad-first gameplay with keyboard fallback for debugging. It's a pure static site with no server required.
+Nono is a retro-styled nonogram puzzle game built with Phaser 3. The game is designed for gamepad-first gameplay with keyboard fallback for debugging. Static files are served via Express from the `web/` directory.
 
 ## Key Architecture Decisions
 
@@ -59,7 +59,7 @@ npm run lint
 - Fix any errors before committing
 - Unused variables must be prefixed with underscore (e.g., `_gamepadIndex`)
 - Phaser is defined as a global in eslint.config.mjs
-- The js/lib/ directory is excluded from linting
+- The web/js/lib/ directory is excluded from linting
 
 ### Scene Lifecycle
 Each scene follows this pattern:
@@ -81,23 +81,24 @@ this.inputManager.on("accept", (gamepadIndex) => {
 
 | Purpose | Location |
 |---------|----------|
-| Game entry point | `js/main.js` |
-| Scenes | `js/scenes/*.js` |
-| Utilities | `js/utils/*.js` |
-| Puzzle data | `puzzles/puzzles.json` |
-| Phaser library | `js/lib/phaser.min.js` |
+| Express server | `server.js` |
+| Game entry point | `web/js/main.js` |
+| Scenes | `web/js/scenes/*.js` |
+| Utilities | `web/js/utils/*.js` |
+| Puzzle data | `web/puzzles/puzzles.json` |
+| Phaser library | `web/js/lib/phaser.min.js` |
 
 ## Adding New Features
 
 ### Adding a New Puzzle
-1. Edit `puzzles/puzzles.json`
+1. Edit `web/puzzles/puzzles.json`
 2. Add puzzle object with: id, name, difficulty, width, height, solution
 3. Solution is 2D array: 1 = filled, 0 = empty
 
 ### Adding a New Scene
-1. Create file in `js/scenes/NewScene.js`
+1. Create file in `web/js/scenes/NewScene.js`
 2. Import and use InputManager, UIScale, SaveManager as needed
-3. Add scene to imports and config in `js/main.js`
+3. Add scene to imports and config in `web/js/main.js`
 4. Follow existing scene patterns for consistency
 
 ### Modifying Input Handling
@@ -108,12 +109,10 @@ this.inputManager.on("accept", (gamepadIndex) => {
 ## Common Tasks
 
 ### Run the game
-Open `index.html` in a browser. For local development with ES modules, use a local server:
 ```bash
-python3 -m http.server 8000
-# or
-npx serve .
+npm start
 ```
+Then open http://localhost:3080 in a browser.
 
 ### Format code
 ```bash
@@ -134,8 +133,8 @@ npm run format
 
 ## Dependencies
 
-- **phaser**: Game engine (loaded locally from js/lib/)
+- **express**: Web server for serving static files
+- **phaser**: Game engine (loaded locally from web/js/lib/)
 - **prettier**: Code formatting (dev)
 - **eslint**: Linting (dev)
 - All future puzzles added to puzzles.json must be considered valid by the NonogramValidator class.
-- When requesting to open something in a browser, assume that a local dev server at http://localhost:8080 is already running in the repository root
