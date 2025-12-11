@@ -139,3 +139,4 @@ npm run format
 - **eslint**: Linting (dev)
 - All future puzzles added to puzzles.json must be considered valid by the NonogramValidator class.
 - Consider us to be in offline mode if window.nonoSocket is null
+- never ever amend a git commit
