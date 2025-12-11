@@ -1,4 +1,3 @@
-import { io } from "./lib/socket.io.esm.min.js"
 import { BootScene } from "./scenes/BootScene.js"
 import { ProfileSelectScene } from "./scenes/ProfileSelectScene.js"
 import { MainMenuScene } from "./scenes/MainMenuScene.js"
@@ -20,18 +19,20 @@ let remoteControl = null
 if (offline) {
     console.log("Running in offline mode")
 } else {
-    socket = io()
-    socket.on("connect", () => {
-        console.log("Connected to server:", socket.id)
-        // Create RemoteControl only after successful connection
-        if (!remoteControl) {
-            remoteControl = new RemoteControl(socket)
-            window.nonoRemoteControl = remoteControl
-        }
+    import("/socket.io/socket.io.esm.min.js").then((module) => {
+        socket = module.io()
+        window.nonoSocket = socket
+        socket.on("connect", () => {
+            console.log("Connected to server:", socket.id)
+            // Create RemoteControl only after successful connection
+            if (!remoteControl) {
+                remoteControl = new RemoteControl(socket)
+                window.nonoRemoteControl = remoteControl
+            }
+        })
     })
 }
 
-window.nonoSocket = socket
 export { socket, remoteControl }
 
 const config = {

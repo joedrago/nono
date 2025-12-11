@@ -1,4 +1,4 @@
-(function () {
+;(function () {
     // Prevent default touch behavior to stop double-tap zoom, but allow form elements to work
     const shouldPreventDefault = (e) => {
         const tag = e.target.tagName
@@ -131,6 +131,115 @@
                 pressedKeys.delete(key)
                 socket.emit("action", { key, state: "released" })
             })
+
+            // Gamepad support
+            const gamepadHeld = {
+                up: false,
+                down: false,
+                left: false,
+                right: false,
+                a: false,
+                b: false,
+                start: false,
+                select: false
+            }
+
+            function pollGamepads() {
+                const gamepads = navigator.getGamepads ? navigator.getGamepads() : []
+
+                for (const pad of gamepads) {
+                    if (!pad) continue
+
+                    // D-pad (axes 0 and 1, or buttons 12-15 on standard gamepad)
+                    const leftStickX = pad.axes[0] || 0
+                    const leftStickY = pad.axes[1] || 0
+                    const dpadUp = (pad.buttons[12] && pad.buttons[12].pressed) || leftStickY < -0.5
+                    const dpadDown = (pad.buttons[13] && pad.buttons[13].pressed) || leftStickY > 0.5
+                    const dpadLeft = (pad.buttons[14] && pad.buttons[14].pressed) || leftStickX < -0.5
+                    const dpadRight = (pad.buttons[15] && pad.buttons[15].pressed) || leftStickX > 0.5
+
+                    // D-pad handling
+                    if (dpadUp && !gamepadHeld.up) {
+                        gamepadHeld.up = true
+                        socket.emit("action", { key: "up", state: "pressed" })
+                    } else if (!dpadUp && gamepadHeld.up) {
+                        gamepadHeld.up = false
+                        socket.emit("action", { key: "up", state: "released" })
+                    }
+
+                    if (dpadDown && !gamepadHeld.down) {
+                        gamepadHeld.down = true
+                        socket.emit("action", { key: "down", state: "pressed" })
+                    } else if (!dpadDown && gamepadHeld.down) {
+                        gamepadHeld.down = false
+                        socket.emit("action", { key: "down", state: "released" })
+                    }
+
+                    if (dpadLeft && !gamepadHeld.left) {
+                        gamepadHeld.left = true
+                        socket.emit("action", { key: "left", state: "pressed" })
+                    } else if (!dpadLeft && gamepadHeld.left) {
+                        gamepadHeld.left = false
+                        socket.emit("action", { key: "left", state: "released" })
+                    }
+
+                    if (dpadRight && !gamepadHeld.right) {
+                        gamepadHeld.right = true
+                        socket.emit("action", { key: "right", state: "pressed" })
+                    } else if (!dpadRight && gamepadHeld.right) {
+                        gamepadHeld.right = false
+                        socket.emit("action", { key: "right", state: "released" })
+                    }
+
+                    // A button (index 0 on standard gamepads)
+                    const aButton = pad.buttons[0] && pad.buttons[0].pressed
+                    if (aButton && !gamepadHeld.a) {
+                        gamepadHeld.a = true
+                        socket.emit("action", { key: "a", state: "pressed" })
+                    } else if (!aButton && gamepadHeld.a) {
+                        gamepadHeld.a = false
+                        socket.emit("action", { key: "a", state: "released" })
+                    }
+
+                    // B button (index 1 on standard gamepads)
+                    const bButton = pad.buttons[1] && pad.buttons[1].pressed
+                    if (bButton && !gamepadHeld.b) {
+                        gamepadHeld.b = true
+                        socket.emit("action", { key: "b", state: "pressed" })
+                    } else if (!bButton && gamepadHeld.b) {
+                        gamepadHeld.b = false
+                        socket.emit("action", { key: "b", state: "released" })
+                    }
+
+                    // Start button (index 9 on standard gamepads)
+                    const startButton = pad.buttons[9] && pad.buttons[9].pressed
+                    if (startButton && !gamepadHeld.start) {
+                        gamepadHeld.start = true
+                        socket.emit("action", { key: "start", state: "pressed" })
+                    } else if (!startButton && gamepadHeld.start) {
+                        gamepadHeld.start = false
+                        socket.emit("action", { key: "start", state: "released" })
+                    }
+
+                    // Select button (index 8 on standard gamepads)
+                    const selectButton = pad.buttons[8] && pad.buttons[8].pressed
+                    if (selectButton && !gamepadHeld.select) {
+                        gamepadHeld.select = true
+                        socket.emit("action", { key: "select", state: "pressed" })
+                    } else if (!selectButton && gamepadHeld.select) {
+                        gamepadHeld.select = false
+                        socket.emit("action", { key: "select", state: "released" })
+                    }
+
+                    // Only process first connected gamepad
+                    break
+                }
+
+                requestAnimationFrame(pollGamepads)
+            }
+
+            // Start gamepad polling
+            requestAnimationFrame(pollGamepads)
         })
     } else {
         // Show the form
