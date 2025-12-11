@@ -37,8 +37,12 @@ export class VictoryScene extends Phaser.Scene {
         }
 
         this.createUI()
-        this.setupInput()
         this.createParticles()
+
+        // Delay input setup by 1 second to prevent accidental button presses
+        this.time.delayedCall(1000, () => {
+            this.setupInput()
+        })
 
         // Show any earned achievement toasts
         const pendingToasts = this.achievementManager.getPendingToasts()
@@ -119,34 +123,137 @@ export class VictoryScene extends Phaser.Scene {
     drawPuzzleImage() {
         const theme = this.themeManager.getTheme()
         const maxSize = this.uiScale.percent(35)
-        const cellSize = Math.min(maxSize / this.puzzle.width, maxSize / this.puzzle.height)
+        this.cellSize = Math.min(maxSize / this.puzzle.width, maxSize / this.puzzle.height)
 
-        const gridWidth = this.puzzle.width * cellSize
-        const gridHeight = this.puzzle.height * cellSize
-        const startX = this.uiScale.centerX - gridWidth / 2
-        const startY = this.uiScale.percent(40)
+        const gridWidth = this.puzzle.width * this.cellSize
+        const gridHeight = this.puzzle.height * this.cellSize
+        this.gridStartX = this.uiScale.centerX - gridWidth / 2
+        this.gridStartY = this.uiScale.percent(40)
 
-        const graphics = this.add.graphics()
+        // Background and border graphics
+        const bgGraphics = this.add.graphics()
+        bgGraphics.fillStyle(theme.graphics.cellEmpty, 1)
+        bgGraphics.fillRect(this.gridStartX - 4, this.gridStartY - 4, gridWidth + 8, gridHeight + 8)
+        bgGraphics.lineStyle(2, theme.graphics.puzzleBorder, 1)
+        bgGraphics.strokeRect(this.gridStartX - 4, this.gridStartY - 4, gridWidth + 8, gridHeight + 8)
+        this.uiContainer.add(bgGraphics)
 
-        // Background
-        graphics.fillStyle(theme.graphics.cellEmpty, 1)
-        graphics.fillRect(startX - 4, startY - 4, gridWidth + 8, gridHeight + 8)
+        // Create individual cell graphics for animation
+        this.cellGraphics = []
+        const startColor = theme.graphics.cellFilled
 
-        // Draw filled cells
         for (let y = 0; y < this.puzzle.height; y++) {
+            this.cellGraphics[y] = []
             for (let x = 0; x < this.puzzle.width; x++) {
                 if (this.puzzle.solution[y][x] === 1) {
-                    graphics.fillStyle(theme.graphics.cellFilled, 1)
-                    graphics.fillRect(startX + x * cellSize + 1, startY + y * cellSize + 1, cellSize - 2, cellSize - 2)
+                    const cellGfx = this.add.graphics()
+                    cellGfx.fillStyle(startColor, 1)
+                    cellGfx.fillRect(
+                        this.gridStartX + x * this.cellSize + 1,
+                        this.gridStartY + y * this.cellSize + 1,
+                        this.cellSize - 2,
+                        this.cellSize - 2
+                    )
+                    this.cellGraphics[y][x] = cellGfx
+                    this.uiContainer.add(cellGfx)
+                } else {
+                    this.cellGraphics[y][x] = null
                 }
             }
         }
 
-        // Border
-        graphics.lineStyle(2, theme.graphics.puzzleBorder, 1)
-        graphics.strokeRect(startX - 4, startY - 4, gridWidth + 8, gridHeight + 8)
+        // Start color fade animation if puzzle has a picture property
+        if (this.puzzle.picture) {
+            this.startColorFadeAnimation()
+        }
+    }
 
-        this.uiContainer.add(graphics)
+    startColorFadeAnimation() {
+        const theme = this.themeManager.getTheme()
+        const startColor = theme.graphics.cellFilled
+        const fadeDuration = 3000 // 3 seconds
+        let startTime = null
+
+        // Store start colors for each cell
+        this.cellStartColors = []
+        this.cellTargetColors = []
+
+        for (let y = 0; y < this.puzzle.height; y++) {
+            this.cellStartColors[y] = []
+            this.cellTargetColors[y] = []
+            for (let x = 0; x < this.puzzle.width; x++) {
+                if (this.puzzle.solution[y][x] === 1) {
+                    this.cellStartColors[y][x] = startColor
+                    // Parse the picture color (could be hex number or string)
+                    const pictureColor = this.puzzle.picture[y][x]
+                    this.cellTargetColors[y][x] = typeof pictureColor === "string" ? parseInt(pictureColor, 16) : pictureColor
+                } else {
+                    this.cellStartColors[y][x] = null
+                    this.cellTargetColors[y][x] = null
+                }
+            }
+        }
+
+        // Create the animation update loop
+        this.colorFadeEvent = this.time.addEvent({
+            delay: 16, // ~60fps
+            callback: () => {
+                // Capture start time on first callback to avoid timing issues at scene start
+                if (startTime === null) {
+                    startTime = this.time.now
+                }
+                const elapsed = this.time.now - startTime
+                const progress = Math.min(elapsed / fadeDuration, 1)
+
+                // Use easeInOut for smooth animation
+                const easedProgress = this.easeInOutCubic(progress)
+
+                for (let y = 0; y < this.puzzle.height; y++) {
+                    for (let x = 0; x < this.puzzle.width; x++) {
+                        if (this.cellGraphics[y][x] && this.cellStartColors[y][x] !== null) {
+                            const blendedColor = this.lerpColor(
+                                this.cellStartColors[y][x],
+                                this.cellTargetColors[y][x],
+                                easedProgress
+                            )
+                            this.cellGraphics[y][x].clear()
+                            this.cellGraphics[y][x].fillStyle(blendedColor, 1)
+                            this.cellGraphics[y][x].fillRect(
+                                this.gridStartX + x * this.cellSize + 1,
+                                this.gridStartY + y * this.cellSize + 1,
+                                this.cellSize - 2,
+                                this.cellSize - 2
+                            )
+                        }
+                    }
+                }
+
+                if (progress >= 1) {
+                    this.colorFadeEvent.remove()
+                }
+            },
+            loop: true
+        })
+    }
+
+    easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+    }
+
+    lerpColor(colorA, colorB, t) {
+        const rA = (colorA >> 16) & 0xff
+        const gA = (colorA >> 8) & 0xff
+        const bA = colorA & 0xff
+
+        const rB = (colorB >> 16) & 0xff
+        const gB = (colorB >> 8) & 0xff
+        const bB = colorB & 0xff
+
+        const r = Math.round(rA + (rB - rA) * t)
+        const g = Math.round(gA + (gB - gA) * t)
+        const b = Math.round(bA + (bB - bA) * t)
+
+        return (r << 16) | (g << 8) | b
     }
 
     createParticles() {
@@ -226,6 +333,10 @@ export class VictoryScene extends Phaser.Scene {
         this.uiScale.update()
         this.particles.forEach((p) => p.destroy())
         this.particles = []
+        if (this.colorFadeEvent) {
+            this.colorFadeEvent.remove()
+            this.colorFadeEvent = null
+        }
         this.uiContainer.destroy()
         this.createUI()
         this.createParticles()
@@ -239,6 +350,10 @@ export class VictoryScene extends Phaser.Scene {
 
     shutdown() {
         this.inputManager.clearSceneListeners()
+        if (this.colorFadeEvent) {
+            this.colorFadeEvent.remove()
+            this.colorFadeEvent = null
+        }
         if (this.achievementToast) {
             this.achievementToast.destroy()
         }

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nonogram Puzzle Solutions</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a2e;
+            color: #e0e0ff;
+            padding: 20px;
+        }
+        h1 { color: #8888ff; }
+        h2 { color: #aaaacc; margin-top: 30px; }
+        .puzzle-grid {
+            display: inline-grid;
+            gap: 1px;
+            background: #333;
+            border: 2px solid #555;
+            margin: 10px;
+            vertical-align: top;
+        }
+        .puzzle-container {
+            display: inline-block;
+            text-align: center;
+            margin: 10px;
+            padding: 10px;
+            background: #252545;
+            border-radius: 8px;
+        }
+        .puzzle-name {
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #aaaacc;
+        }
+        .puzzle-id {
+            font-size: 10px;
+            color: #666688;
+        }
+        .cell {
+            width: 8px;
+            height: 8px;
+        }
+        .cell-empty {
+            background: #1a1a2e;
+        }
+        .difficulty-section {
+            margin-bottom: 40px;
+        }
+        .summary {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #333355;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nonogram Puzzle Solutions</h1>
+    <div id="results">Loading...</div>
+
+    <script type="module">
+        function numberToHex(num) {
+            if (num === 0) return null;
+            return '#' + num.toString(16).padStart(6, '0');
+        }
+
+        function createPuzzleGrid(puzzle) {
+            const container = document.createElement('div');
+            container.className = 'puzzle-container';
+
+            const name = document.createElement('div');
+            name.className = 'puzzle-name';
+            name.textContent = puzzle.name;
+            container.appendChild(name);
+
+            const id = document.createElement('div');
+            id.className = 'puzzle-id';
+            id.textContent = `${puzzle.id} (${puzzle.width}x${puzzle.height})`;
+            container.appendChild(id);
+
+            const grid = document.createElement('div');
+            grid.className = 'puzzle-grid';
+            grid.style.gridTemplateColumns = `repeat(${puzzle.width}, 8px)`;
+
+            for (let y = 0; y < puzzle.height; y++) {
+                for (let x = 0; x < puzzle.width; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+
+                    if (puzzle.solution[y][x] === 1) {
+                        // Use picture color if available, otherwise default
+                        if (puzzle.picture && puzzle.picture[y] && puzzle.picture[y][x]) {
+                            const color = numberToHex(puzzle.picture[y][x]);
+                            cell.style.background = color || '#4169e1';
+                        } else {
+                            cell.style.background = '#4169e1';
+                        }
+                    } else {
+                        cell.className += ' cell-empty';
+                    }
+
+                    grid.appendChild(cell);
+                }
+            }
+
+            container.appendChild(grid);
+            return container;
+        }
+
+        async function loadPuzzles() {
+            const resultsDiv = document.getElementById('results');
+
+            try {
+                const response = await fetch('./puzzles/puzzles.json');
+                const data = await response.json();
+
+                const puzzles = data.puzzles;
+                const easy = puzzles.filter(p => p.difficulty === 'easy');
+                const medium = puzzles.filter(p => p.difficulty === 'medium');
+                const hard = puzzles.filter(p => p.difficulty === 'hard');
+
+                let html = `
+                    <div class="summary">
+                        Total puzzles: ${puzzles.length}<br>
+                        Easy: ${easy.length} | Medium: ${medium.length} | Hard: ${hard.length}
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = html;
+
+                // Easy puzzles
+                const easySection = document.createElement('div');
+                easySection.className = 'difficulty-section';
+                easySection.innerHTML = '<h2>Easy Puzzles</h2>';
+                easy.forEach(puzzle => {
+                    easySection.appendChild(createPuzzleGrid(puzzle));
+                });
+                resultsDiv.appendChild(easySection);
+
+                // Medium puzzles
+                const mediumSection = document.createElement('div');
+                mediumSection.className = 'difficulty-section';
+                mediumSection.innerHTML = '<h2>Medium Puzzles</h2>';
+                medium.forEach(puzzle => {
+                    mediumSection.appendChild(createPuzzleGrid(puzzle));
+                });
+                resultsDiv.appendChild(mediumSection);
+
+                // Hard puzzles
+                const hardSection = document.createElement('div');
+                hardSection.className = 'difficulty-section';
+                hardSection.innerHTML = '<h2>Hard Puzzles</h2>';
+                hard.forEach(puzzle => {
+                    hardSection.appendChild(createPuzzleGrid(puzzle));
+                });
+                resultsDiv.appendChild(hardSection);
+
+            } catch (error) {
+                resultsDiv.innerHTML = '<span style="color: #ff4444;">Error: ' + error.message + '</span>';
+            }
+        }
+
+        loadPuzzles();
+    </script>
+</body>
+</html>
