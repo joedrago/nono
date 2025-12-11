@@ -41,6 +41,12 @@ export class InputManager {
         // Tap (mouse/touch) virtual index (lazy init)
         this.tapVirtualIndex = null
 
+        // Track which button is currently held by tap input
+        this.tapHeldButton = null
+
+        // Track the active touch ID (first touch only, ignore multitouch)
+        this.activeTouchId = null
+
         // Track if global listeners are registered
         this.keyboardListenerRegistered = false
         this.gamepadListenerRegistered = false
@@ -250,91 +256,167 @@ export class InputManager {
         // Get the canvas element from Phaser
         const canvas = this.game.canvas
 
-        // Helper to get coordinates from mouse or touch event
-        const getCoords = (event) => {
+        // Helper to get coordinates from mouse event
+        const getMouseCoords = (event) => {
             const rect = canvas.getBoundingClientRect()
-            if (event.touches && event.touches.length > 0) {
-                return {
-                    x: event.touches[0].clientX - rect.left,
-                    y: event.touches[0].clientY - rect.top
-                }
-            } else if (event.changedTouches && event.changedTouches.length > 0) {
-                return {
-                    x: event.changedTouches[0].clientX - rect.left,
-                    y: event.changedTouches[0].clientY - rect.top
-                }
-            } else {
-                return {
-                    x: event.clientX - rect.left,
-                    y: event.clientY - rect.top
-                }
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
             }
         }
 
-        // Mouse down / Touch start - emit tapMove to teleport, then acceptDown
-        const handlePointerDown = (event) => {
+        // Helper to get coordinates from touch event by touch ID
+        const getTouchCoords = (event, touchId) => {
+            const rect = canvas.getBoundingClientRect()
+            // Find the touch with the matching ID
+            const touchList = event.touches.length > 0 ? event.touches : event.changedTouches
+            for (const touch of touchList) {
+                if (touch.identifier === touchId) {
+                    return {
+                        x: touch.clientX - rect.left,
+                        y: touch.clientY - rect.top
+                    }
+                }
+            }
+            return null
+        }
+
+        // Release any currently held tap button
+        const releaseTapButton = () => {
+            if (this.tapVirtualIndex === null || this.tapHeldButton === null) return
+
+            const held = this.getHeldState(this.tapVirtualIndex)
+            const button = this.tapHeldButton
+
+            if (held[button]) {
+                held[button] = false
+                this.markButtonReleased(this.tapVirtualIndex, button)
+                this.emit(button + "Up", this.tapVirtualIndex)
+            }
+            this.tapHeldButton = null
+        }
+
+        // Mouse down / Touch start - emit tapMove to teleport, then press button
+        const handlePointerDown = (coords) => {
             if (!this.activeScene) return
+
+            // Release any previously held button before pressing a new one
+            releaseTapButton()
 
             // Lazily initialize tap as a virtual gamepad on first input
             const virtualIndex = this.getTapVirtualIndex()
             const held = this.getHeldState(virtualIndex)
-            const coords = getCoords(event)
 
             // First emit tapMove so scene can teleport cursor to nearest item
             this.emitTapMove(virtualIndex, coords.x, coords.y)
 
-            // Then press accept button
-            if (!held.accept) {
-                held.accept = true
-                this.markButtonPressed(virtualIndex, "accept")
-                this.emit("acceptDown", virtualIndex)
-                this.emit("accept", virtualIndex)
+            // Ask scene which button this tap should be, default to "accept"
+            let button = "accept"
+            if (this.activeScene.calcTapButton && typeof this.activeScene.calcTapButton === "function") {
+                button = this.activeScene.calcTapButton(coords.x, coords.y) || "accept"
+            }
+
+            // Press the determined button
+            if (!held[button]) {
+                held[button] = true
+                this.tapHeldButton = button
+                this.markButtonPressed(virtualIndex, button)
+                this.emit(button + "Down", virtualIndex)
+                this.emit(button, virtualIndex)
             }
         }
 
-        // Mouse up / Touch end - release accept button
-        const handlePointerUp = (_event) => {
+        // Mouse up / Touch end - release the held button
+        const handlePointerUp = () => {
             if (!this.activeScene) return
 
             // Only process if tap has been initialized
             if (this.tapVirtualIndex === null) return
 
-            const held = this.getHeldState(this.tapVirtualIndex)
-            if (held.accept) {
-                held.accept = false
-                this.markButtonReleased(this.tapVirtualIndex, "accept")
-                this.emit("acceptUp", this.tapVirtualIndex)
-            }
+            releaseTapButton()
         }
 
         // Mouse move / Touch move - emit tapMove for cursor teleportation
-        const handlePointerMove = (event) => {
+        const handlePointerMove = (coords) => {
             if (!this.activeScene) return
 
             // Lazily initialize tap as a virtual gamepad on first input
             const virtualIndex = this.getTapVirtualIndex()
-            const coords = getCoords(event)
 
             this.emitTapMove(virtualIndex, coords.x, coords.y)
         }
 
         // Register mouse events
-        canvas.addEventListener("mousedown", handlePointerDown)
-        canvas.addEventListener("mouseup", handlePointerUp)
-        canvas.addEventListener("mousemove", handlePointerMove)
+        canvas.addEventListener("mousedown", (event) => {
+            handlePointerDown(getMouseCoords(event))
+        })
+        canvas.addEventListener("mouseup", () => {
+            handlePointerUp()
+        })
+        canvas.addEventListener("mousemove", (event) => {
+            handlePointerMove(getMouseCoords(event))
+        })
 
-        // Register touch events
+        // Register touch events (first touch only, ignore multitouch)
         canvas.addEventListener("touchstart", (event) => {
             event.preventDefault() // Prevent scrolling/zooming
-            handlePointerDown(event)
+
+            // Only track the first touch
+            if (this.activeTouchId !== null) return
+            if (event.touches.length === 0) return
+
+            const touch = event.touches[0]
+            this.activeTouchId = touch.identifier
+
+            const coords = getTouchCoords(event, this.activeTouchId)
+            if (coords) {
+                handlePointerDown(coords)
+            }
         })
         canvas.addEventListener("touchend", (event) => {
             event.preventDefault()
-            handlePointerUp(event)
+
+            // Only respond to the tracked touch ending
+            if (this.activeTouchId === null) return
+
+            // Check if our tracked touch is in changedTouches (ended touches)
+            let foundTouch = false
+            for (const touch of event.changedTouches) {
+                if (touch.identifier === this.activeTouchId) {
+                    foundTouch = true
+                    break
+                }
+            }
+
+            if (foundTouch) {
+                this.activeTouchId = null
+                handlePointerUp()
+            }
         })
         canvas.addEventListener("touchmove", (event) => {
             event.preventDefault()
-            handlePointerMove(event)
+
+            // Only respond to the tracked touch
+            if (this.activeTouchId === null) return
+
+            const coords = getTouchCoords(event, this.activeTouchId)
+            if (coords) {
+                handlePointerMove(coords)
+            }
+        })
+        canvas.addEventListener("touchcancel", (event) => {
+            event.preventDefault()
+
+            // Treat cancel same as end for our tracked touch
+            if (this.activeTouchId === null) return
+
+            for (const touch of event.changedTouches) {
+                if (touch.identifier === this.activeTouchId) {
+                    this.activeTouchId = null
+                    handlePointerUp()
+                    break
+                }
+            }
         })
     }
 

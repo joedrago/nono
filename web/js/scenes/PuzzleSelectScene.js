@@ -113,12 +113,14 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         // Difficulty selection with solved counts
         this.diffButtons = []
-        const startY = this.uiScale.percent(38)
-        const spacing = this.uiScale.percent(14)
+        this.diffStartY = this.uiScale.percent(38)
+        this.diffSpacing = this.uiScale.percent(14)
+        this.diffWidth = this.uiScale.percent(45)
+        this.diffHeight = this.uiScale.percent(11)
 
         this.difficulties.forEach((diff, i) => {
             const count = solvedCounts[diff]
-            const btn = this.createDiffButton(this.difficultyLabels[diff], count, startY + i * spacing, i)
+            const btn = this.createDiffButton(this.difficultyLabels[diff], count, this.diffStartY + i * this.diffSpacing, i)
             this.diffButtons.push(btn)
             this.uiContainer.add(btn.container)
         })
@@ -438,6 +440,56 @@ export class PuzzleSelectScene extends Phaser.Scene {
             this.playSound("navigate")
             this.scene.start("MainMenuScene")
         })
+
+        // Handle tap/mouse move - teleport selection to nearest puzzle item
+        this.inputManager.on("tapMove", (_gamepadIndex, x, y) => {
+            const nearestItem = this.findNearestPuzzleItem(x, y)
+            if (nearestItem !== -1 && nearestItem !== this.selectedIndex) {
+                this.selectedIndex = nearestItem
+
+                // Adjust scroll if the selected item is not visible
+                const selectedCol = Math.floor(this.selectedIndex / this.gridRows)
+                if (selectedCol < this.scrollOffset) {
+                    this.scrollOffset = selectedCol
+                    this.refreshGrid()
+                } else if (selectedCol >= this.scrollOffset + this.visibleCols) {
+                    this.scrollOffset = Math.max(0, selectedCol - this.visibleCols + 1)
+                    this.refreshGrid()
+                } else {
+                    this.updateGridSelection()
+                }
+            }
+        })
+    }
+
+    // Find the nearest puzzle item to the given screen coordinates
+    findNearestPuzzleItem(x, y) {
+        let nearestIndex = -1
+        let nearestDistance = Infinity
+
+        // Grid container is centered at (centerX, 50%)
+        const gridCenterX = this.uiScale.centerX
+        const gridCenterY = this.uiScale.percent(50)
+
+        for (const item of this.puzzleItems) {
+            // Convert item's local position to screen position
+            const itemScreenX = gridCenterX + item.container.x
+            const itemScreenY = gridCenterY + item.container.y
+
+            // Calculate distance from tap to item center
+            const dx = x - itemScreenX
+            const dy = y - itemScreenY
+            const distance = Math.sqrt(dx * dx + dy * dy)
+
+            // Check if tap is within reasonable range of the item
+            const maxDistance = Math.max(this.cellWidth, this.cellHeight)
+            if (distance < maxDistance && distance < nearestDistance) {
+                nearestDistance = distance
+                nearestIndex = item.index
+            }
+        }
+
+        return nearestIndex
     }
 
     setupInfiniteInput() {
@@ -463,6 +515,40 @@ export class PuzzleSelectScene extends Phaser.Scene {
             this.playSound("navigate")
             this.scene.start("MainMenuScene")
         })
+
+        // Handle tap/mouse move - teleport selection to nearest difficulty button
+        this.inputManager.on("tapMove", (_gamepadIndex, x, y) => {
+            const nearestItem = this.findNearestDiffButton(x, y)
+            if (nearestItem !== -1 && nearestItem !== this.selectedIndex) {
+                this.selectedIndex = nearestItem
+                this.updateInfiniteSelection()
+            }
+        })
+    }
+
+    // Find the nearest difficulty button to the given screen coordinates
+    findNearestDiffButton(x, y) {
+        let nearestIndex = -1
+        let nearestDistance = Infinity
+
+        for (let i = 0; i < this.difficulties.length; i++) {
+            const itemY = this.diffStartY + i * this.diffSpacing
+            const itemX = this.uiScale.centerX
+
+            // Calculate distance from tap to item center
+            const dx = x - itemX
+            const dy = y - itemY
+            const distance = Math.sqrt(dx * dx + dy * dy)
+
+            // Check if tap is within reasonable range of the item
+            const maxDistance = Math.max(this.diffWidth, this.diffHeight)
+            if (distance < maxDistance && distance < nearestDistance) {
+                nearestDistance = distance
+                nearestIndex = i
+            }
+        }
+
+        return nearestIndex
     }
 
     refreshGrid() {

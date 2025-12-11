@@ -62,11 +62,13 @@ export class MainMenuScene extends Phaser.Scene {
 
         // Menu items
         this.menuButtons = []
-        const menuStartY = this.uiScale.percent(38)
-        const menuSpacing = this.uiScale.percent(8)
+        this.menuStartY = this.uiScale.percent(38)
+        this.menuSpacing = this.uiScale.percent(8)
+        this.menuWidth = this.uiScale.percent(40)
+        this.menuHeight = this.uiScale.percent(6)
 
         this.menuItems.forEach((item, i) => {
-            const btn = this.createMenuItem(item, menuStartY + i * menuSpacing)
+            const btn = this.createMenuItem(item, this.menuStartY + i * this.menuSpacing)
             this.menuButtons.push(btn)
             this.uiContainer.add(btn.container)
         })
@@ -167,6 +169,40 @@ export class MainMenuScene extends Phaser.Scene {
                     break
             }
         })
+
+        // Handle tap/mouse move - teleport selection to nearest menu item
+        this.inputManager.on("tapMove", (_gamepadIndex, x, y) => {
+            const nearestItem = this.findNearestMenuItem(x, y)
+            if (nearestItem !== -1 && nearestItem !== this.selectedIndex) {
+                this.selectedIndex = nearestItem
+                this.updateSelection()
+            }
+        })
+    }
+
+    // Find the nearest menu item to the given screen coordinates
+    findNearestMenuItem(x, y) {
+        let nearestIndex = -1
+        let nearestDistance = Infinity
+
+        for (let i = 0; i < this.menuItems.length; i++) {
+            const itemY = this.menuStartY + i * this.menuSpacing
+            const itemX = this.uiScale.centerX
+
+            // Calculate distance from tap to item center
+            const dx = x - itemX
+            const dy = y - itemY
+            const distance = Math.sqrt(dx * dx + dy * dy)
+
+            // Check if tap is within reasonable range of the item
+            const maxDistance = Math.max(this.menuWidth, this.menuHeight)
+            if (distance < maxDistance && distance < nearestDistance) {
+                nearestDistance = distance
+                nearestIndex = i
+            }
+        }
+
+        return nearestIndex
     }
 
     handleResize() {

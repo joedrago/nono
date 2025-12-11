@@ -66,17 +66,18 @@ export class ThemeSelectScene extends Phaser.Scene {
         this.listContainer = this.add.container(this.uiScale.centerX, this.uiScale.percent(50))
         this.uiContainer.add(this.listContainer)
 
-        const itemWidth = this.uiScale.percent(60)
-        const itemHeight = this.uiScale.percent(14)
-        const spacing = this.uiScale.percent(4)
+        this.itemWidth = this.uiScale.percent(60)
+        this.itemHeight = this.uiScale.percent(14)
+        this.itemSpacing = this.uiScale.percent(4)
+        this.listCenterY = this.uiScale.percent(50)
 
-        const totalHeight = this.themes.length * itemHeight + (this.themes.length - 1) * spacing
+        const totalHeight = this.themes.length * this.itemHeight + (this.themes.length - 1) * this.itemSpacing
 
         this.themeItems = []
 
         this.themes.forEach((themeData, i) => {
-            const y = -totalHeight / 2 + i * (itemHeight + spacing) + itemHeight / 2
-            const item = this.createThemeItem(themeData, 0, y, itemWidth, itemHeight, i)
+            const y = -totalHeight / 2 + i * (this.itemHeight + this.itemSpacing) + this.itemHeight / 2
+            const item = this.createThemeItem(themeData, 0, y, this.itemWidth, this.itemHeight, i)
             this.themeItems.push(item)
             this.listContainer.add(item.container)
         })
@@ -162,7 +163,9 @@ export class ThemeSelectScene extends Phaser.Scene {
                 // Refresh UI to show new theme
                 this.refreshUI()
             } else {
+                // Already selected theme, go back
                 this.playSound("navigate")
+                this.scene.start("MainMenuScene")
             }
         })
 
@@ -170,6 +173,44 @@ export class ThemeSelectScene extends Phaser.Scene {
             this.playSound("navigate")
             this.scene.start("MainMenuScene")
         })
+
+        // Handle tap/mouse move - teleport selection to nearest theme item
+        this.inputManager.on("tapMove", (_gamepadIndex, x, y) => {
+            const nearestItem = this.findNearestThemeItem(x, y)
+            if (nearestItem !== -1 && nearestItem !== this.selectedIndex) {
+                this.selectedIndex = nearestItem
+                this.updateSelection()
+            }
+        })
+    }
+
+    // Find the nearest theme item to the given screen coordinates
+    findNearestThemeItem(x, y) {
+        let nearestIndex = -1
+        let nearestDistance = Infinity
+
+        // List container is centered at (centerX, listCenterY)
+        const listCenterX = this.uiScale.centerX
+
+        for (const item of this.themeItems) {
+            // Convert item's local position to screen position
+            const itemScreenX = listCenterX + item.container.x
+            const itemScreenY = this.listCenterY + item.container.y
+
+            // Calculate distance from tap to item center
+            const dx = x - itemScreenX
+            const dy = y - itemScreenY
+            const distance = Math.sqrt(dx * dx + dy * dy)
+
+            // Check if tap is within reasonable range of the item
+            const maxDistance = Math.max(this.itemWidth, this.itemHeight)
+            if (distance < maxDistance && distance < nearestDistance) {
+                nearestDistance = distance
+                nearestIndex = item.index
+            }
+        }
+
+        return nearestIndex
     }
 
     refreshUI() {

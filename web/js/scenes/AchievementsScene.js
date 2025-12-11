@@ -193,6 +193,12 @@ export class AchievementsScene extends Phaser.Scene {
             this.playSound("navigate")
             this.scene.start("MainMenuScene")
         })
+
+        // Accept also goes back (for tap/mouse support)
+        this.inputManager.on("accept", () => {
+            this.playSound("navigate")
+            this.scene.start("MainMenuScene")
+        })
     }
 
     refreshUI() {
