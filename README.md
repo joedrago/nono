@@ -42,12 +42,14 @@ Then open `http://localhost:8000` in your browser.
 - **D-pad**: Navigate menus and move cursor on puzzle grid
 - **A button**: Select menu items / Fill cell
 - **B button**: Go back in menus / Mark cell with X
+- **Y button**: Delete profile (on profile select screen)
 - **Start button**: Open pause menu (in puzzle)
 
 ### Keyboard (for debugging)
 - **Arrow keys**: D-pad (navigate menus and move cursor)
 - **Enter**: A button (select / fill)
 - **Backspace**: B button (back / mark X)
+- **Y key**: Y button (delete profile)
 - **Escape**: Start button (pause menu)
 
 ## How to Play Nonograms

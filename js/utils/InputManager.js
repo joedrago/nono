@@ -69,6 +69,8 @@ export class InputManager {
                 return "back" // B button
             case "Escape":
                 return "start" // Start button
+            case "KeyY":
+                return "delete" // Y button
             default:
                 return null
         }
@@ -118,6 +120,12 @@ export class InputManager {
             if (startButton && startButton.pressed && this.canInput(index, "start")) {
                 this.emit("start", index)
                 this.setInputTime(index, "start")
+            }
+
+            // Y button (index 3 on standard gamepads) - Delete
+            if (pad.Y && this.canInput(index, "Y")) {
+                this.emit("delete", index)
+                this.setInputTime(index, "Y")
             }
         })
     }
