@@ -15,7 +15,7 @@ export class GameScene extends Phaser.Scene {
 
     create() {
         this.uiScale = new UIScale(this)
-        this.input_manager = new InputManager(this)
+        this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
 
         // Cell states: 0 = empty, 1 = filled, 2 = marked (X)
@@ -166,7 +166,7 @@ export class GameScene extends Phaser.Scene {
         this.cursors.set(-1, {
             x: Math.floor(this.puzzle.width / 2),
             y: Math.floor(this.puzzle.height / 2),
-            color: this.input_manager.getCursorColor(-1)
+            color: this.inputManager.getCursorColor(-1)
         })
     }
 
@@ -175,7 +175,7 @@ export class GameScene extends Phaser.Scene {
             this.cursors.set(gamepadIndex, {
                 x: Math.floor(this.puzzle.width / 2),
                 y: Math.floor(this.puzzle.height / 2),
-                color: this.input_manager.getCursorColor(gamepadIndex)
+                color: this.inputManager.getCursorColor(gamepadIndex)
             })
         }
         return this.cursors.get(gamepadIndex)
@@ -375,7 +375,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     setupInput() {
-        this.input_manager.on("up", (gamepadIndex) => {
+        this.inputManager.on("up", (gamepadIndex) => {
             if (this.paused) {
                 this.pauseIndex = Math.max(0, this.pauseIndex - 1)
                 this.updatePauseMenu()
@@ -388,7 +388,7 @@ export class GameScene extends Phaser.Scene {
             this.playSound("navigate")
         })
 
-        this.input_manager.on("down", (gamepadIndex) => {
+        this.inputManager.on("down", (gamepadIndex) => {
             if (this.paused) {
                 this.pauseIndex = Math.min(2, this.pauseIndex + 1)
                 this.updatePauseMenu()
@@ -401,7 +401,7 @@ export class GameScene extends Phaser.Scene {
             this.playSound("navigate")
         })
 
-        this.input_manager.on("left", (gamepadIndex) => {
+        this.inputManager.on("left", (gamepadIndex) => {
             if (this.paused) return
             const cursor = this.getCursor(gamepadIndex)
             cursor.x = Math.max(0, cursor.x - 1)
@@ -409,7 +409,7 @@ export class GameScene extends Phaser.Scene {
             this.playSound("navigate")
         })
 
-        this.input_manager.on("right", (gamepadIndex) => {
+        this.inputManager.on("right", (gamepadIndex) => {
             if (this.paused) return
             const cursor = this.getCursor(gamepadIndex)
             cursor.x = Math.min(this.puzzle.width - 1, cursor.x + 1)
@@ -417,7 +417,7 @@ export class GameScene extends Phaser.Scene {
             this.playSound("navigate")
         })
 
-        this.input_manager.on("accept", (gamepadIndex) => {
+        this.inputManager.on("accept", (gamepadIndex) => {
             if (this.paused) {
                 this.handlePauseSelection()
                 return
@@ -440,7 +440,7 @@ export class GameScene extends Phaser.Scene {
             this.checkVictory()
         })
 
-        this.input_manager.on("back", (gamepadIndex) => {
+        this.inputManager.on("back", (gamepadIndex) => {
             if (this.paused) {
                 this.hidePauseMenu()
                 this.playSound("navigate")
@@ -462,7 +462,7 @@ export class GameScene extends Phaser.Scene {
             this.playSound("mark")
         })
 
-        this.input_manager.on("start", () => {
+        this.inputManager.on("start", () => {
             if (this.paused) {
                 this.hidePauseMenu()
             } else {
@@ -602,6 +602,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     shutdown() {
-        this.input_manager.destroy()
+        this.inputManager.destroy()
     }
 }

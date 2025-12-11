@@ -9,7 +9,7 @@ export class MainMenuScene extends Phaser.Scene {
 
     create() {
         this.uiScale = new UIScale(this)
-        this.input_manager = new InputManager(this)
+        this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
 
         this.menuItems = ["Play", "Infinite Mode", "Achievements", "Change Profile"]
@@ -124,19 +124,19 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     setupInput() {
-        this.input_manager.on("up", () => {
+        this.inputManager.on("up", () => {
             this.selectedIndex = Math.max(0, this.selectedIndex - 1)
             this.updateSelection()
             this.playSound("navigate")
         })
 
-        this.input_manager.on("down", () => {
+        this.inputManager.on("down", () => {
             this.selectedIndex = Math.min(this.menuItems.length - 1, this.selectedIndex + 1)
             this.updateSelection()
             this.playSound("navigate")
         })
 
-        this.input_manager.on("accept", () => {
+        this.inputManager.on("accept", () => {
             this.playSound("select")
             switch (this.selectedIndex) {
                 case 0: // Play
@@ -154,7 +154,7 @@ export class MainMenuScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("back", () => {
+        this.inputManager.on("back", () => {
             this.playSound("navigate")
             this.scene.start("ProfileSelectScene")
         })
@@ -173,6 +173,6 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     shutdown() {
-        this.input_manager.destroy()
+        this.inputManager.destroy()
     }
 }

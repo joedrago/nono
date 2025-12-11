@@ -9,7 +9,7 @@ export class ProfileSelectScene extends Phaser.Scene {
 
     create() {
         this.uiScale = new UIScale(this)
-        this.input_manager = new InputManager(this)
+        this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
 
         this.selectedSlot = 0
@@ -122,21 +122,21 @@ export class ProfileSelectScene extends Phaser.Scene {
     }
 
     setupInput() {
-        this.input_manager.on("up", () => {
+        this.inputManager.on("up", () => {
             if (this.confirmingDelete) return
             this.selectedSlot = Math.max(0, this.selectedSlot - 1)
             this.updateSelection()
             this.playSound("navigate")
         })
 
-        this.input_manager.on("down", () => {
+        this.inputManager.on("down", () => {
             if (this.confirmingDelete) return
             this.selectedSlot = Math.min(2, this.selectedSlot + 1)
             this.updateSelection()
             this.playSound("navigate")
         })
 
-        this.input_manager.on("accept", () => {
+        this.inputManager.on("accept", () => {
             if (this.confirmingDelete) {
                 // Confirm delete
                 this.saveManager.deleteSlot(this.deleteSlot + 1)
@@ -151,7 +151,7 @@ export class ProfileSelectScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("back", () => {
+        this.inputManager.on("back", () => {
             if (this.confirmingDelete) {
                 // Cancel delete
                 this.hideDeleteConfirm()
@@ -159,7 +159,7 @@ export class ProfileSelectScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("delete", () => {
+        this.inputManager.on("delete", () => {
             if (this.confirmingDelete) return
             // Show delete confirmation if slot is not empty
             const slotData = this.saveManager.getSlotInfo(this.selectedSlot + 1)
@@ -257,6 +257,6 @@ export class ProfileSelectScene extends Phaser.Scene {
     }
 
     shutdown() {
-        this.input_manager.destroy()
+        this.inputManager.destroy()
     }
 }

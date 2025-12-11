@@ -10,7 +10,7 @@ export class AchievementsScene extends Phaser.Scene {
 
     create() {
         this.uiScale = new UIScale(this)
-        this.input_manager = new InputManager(this)
+        this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
         this.achievementManager = new AchievementManager(this.saveManager)
 
@@ -147,7 +147,7 @@ export class AchievementsScene extends Phaser.Scene {
     }
 
     setupInput() {
-        this.input_manager.on("up", () => {
+        this.inputManager.on("up", () => {
             const newIndex = this.selectedIndex - this.gridCols
             if (newIndex >= 0) {
                 this.selectedIndex = newIndex
@@ -156,7 +156,7 @@ export class AchievementsScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("down", () => {
+        this.inputManager.on("down", () => {
             const newIndex = this.selectedIndex + this.gridCols
             if (newIndex < this.achievements.length) {
                 this.selectedIndex = newIndex
@@ -165,7 +165,7 @@ export class AchievementsScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("left", () => {
+        this.inputManager.on("left", () => {
             if (this.selectedIndex % this.gridCols > 0) {
                 this.selectedIndex--
                 this.updateSelection()
@@ -173,7 +173,7 @@ export class AchievementsScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("right", () => {
+        this.inputManager.on("right", () => {
             if (this.selectedIndex % this.gridCols < this.gridCols - 1 && this.selectedIndex < this.achievements.length - 1) {
                 this.selectedIndex++
                 this.updateSelection()
@@ -181,7 +181,7 @@ export class AchievementsScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("back", () => {
+        this.inputManager.on("back", () => {
             this.playSound("navigate")
             this.scene.start("MainMenuScene")
         })
@@ -204,6 +204,6 @@ export class AchievementsScene extends Phaser.Scene {
     }
 
     shutdown() {
-        this.input_manager.destroy()
+        this.inputManager.destroy()
     }
 }

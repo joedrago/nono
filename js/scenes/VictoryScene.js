@@ -16,7 +16,7 @@ export class VictoryScene extends Phaser.Scene {
 
     create() {
         this.uiScale = new UIScale(this)
-        this.input_manager = new InputManager(this)
+        this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
         this.achievementManager = new AchievementManager(this.saveManager)
         this.achievementToast = new AchievementToast(this, this.uiScale)
@@ -167,8 +167,8 @@ export class VictoryScene extends Phaser.Scene {
             }
         }
 
-        this.input_manager.on("accept", goBack)
-        this.input_manager.on("back", goBack)
+        this.inputManager.on("accept", goBack)
+        this.inputManager.on("back", goBack)
     }
 
     handleResize() {
@@ -187,7 +187,7 @@ export class VictoryScene extends Phaser.Scene {
     }
 
     shutdown() {
-        this.input_manager.destroy()
+        this.inputManager.destroy()
         if (this.achievementToast) {
             this.achievementToast.destroy()
         }

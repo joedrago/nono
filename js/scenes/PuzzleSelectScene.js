@@ -13,7 +13,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
     create() {
         this.uiScale = new UIScale(this)
-        this.input_manager = new InputManager(this)
+        this.inputManager = new InputManager(this)
         this.saveManager = new SaveManager()
 
         this.difficulties = ["easy", "medium", "hard"]
@@ -308,7 +308,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
             return
         }
 
-        this.input_manager.on("up", () => {
+        this.inputManager.on("up", () => {
             const currentCol = Math.floor(this.selectedIndex / this.gridRows)
             const currentRow = this.selectedIndex % this.gridRows
 
@@ -319,7 +319,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("down", () => {
+        this.inputManager.on("down", () => {
             const currentCol = Math.floor(this.selectedIndex / this.gridRows)
             const currentRow = this.selectedIndex % this.gridRows
 
@@ -331,7 +331,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("left", () => {
+        this.inputManager.on("left", () => {
             const currentCol = Math.floor(this.selectedIndex / this.gridRows)
             const currentRow = this.selectedIndex % this.gridRows
 
@@ -348,7 +348,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("right", () => {
+        this.inputManager.on("right", () => {
             const currentCol = Math.floor(this.selectedIndex / this.gridRows)
             const currentRow = this.selectedIndex % this.gridRows
 
@@ -367,7 +367,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("accept", () => {
+        this.inputManager.on("accept", () => {
             if (this.sortedPuzzles.length > 0 && this.selectedIndex < this.sortedPuzzles.length) {
                 const puzzle = this.sortedPuzzles[this.selectedIndex]
                 this.playSound("select")
@@ -375,32 +375,32 @@ export class PuzzleSelectScene extends Phaser.Scene {
             }
         })
 
-        this.input_manager.on("back", () => {
+        this.inputManager.on("back", () => {
             this.playSound("navigate")
             this.scene.start("MainMenuScene")
         })
     }
 
     setupInfiniteInput() {
-        this.input_manager.on("up", () => {
+        this.inputManager.on("up", () => {
             this.selectedIndex = Math.max(0, this.selectedIndex - 1)
             this.updateInfiniteSelection()
             this.playSound("navigate")
         })
 
-        this.input_manager.on("down", () => {
+        this.inputManager.on("down", () => {
             this.selectedIndex = Math.min(this.difficulties.length - 1, this.selectedIndex + 1)
             this.updateInfiniteSelection()
             this.playSound("navigate")
         })
 
-        this.input_manager.on("accept", () => {
+        this.inputManager.on("accept", () => {
             this.playSound("select")
             const difficulty = this.difficulties[this.selectedIndex]
             this.scene.start("GameScene", { infinite: true, difficulty })
         })
 
-        this.input_manager.on("back", () => {
+        this.inputManager.on("back", () => {
             this.playSound("navigate")
             this.scene.start("MainMenuScene")
         })
@@ -438,6 +438,6 @@ export class PuzzleSelectScene extends Phaser.Scene {
     }
 
     shutdown() {
-        this.input_manager.destroy()
+        this.inputManager.destroy()
     }
 }
