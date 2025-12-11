@@ -409,14 +409,11 @@ export class GameScene extends Phaser.Scene {
                 return
             }
             const cursor = this.getCursor(gamepadIndex)
-            const oldY = cursor.y
-            cursor.y = Math.max(0, cursor.y - 1)
-            if (cursor.y !== oldY) {
-                this.updateCursor(gamepadIndex)
-                tryDragFill(gamepadIndex)
-                if (!this.dragState.has(gamepadIndex)) {
-                    this.playSound("navigate")
-                }
+            cursor.y = (cursor.y - 1 + this.puzzle.height) % this.puzzle.height
+            this.updateCursor(gamepadIndex)
+            tryDragFill(gamepadIndex)
+            if (!this.dragState.has(gamepadIndex)) {
+                this.playSound("navigate")
             }
         })
 
@@ -428,42 +425,33 @@ export class GameScene extends Phaser.Scene {
                 return
             }
             const cursor = this.getCursor(gamepadIndex)
-            const oldY = cursor.y
-            cursor.y = Math.min(this.puzzle.height - 1, cursor.y + 1)
-            if (cursor.y !== oldY) {
-                this.updateCursor(gamepadIndex)
-                tryDragFill(gamepadIndex)
-                if (!this.dragState.has(gamepadIndex)) {
-                    this.playSound("navigate")
-                }
+            cursor.y = (cursor.y + 1) % this.puzzle.height
+            this.updateCursor(gamepadIndex)
+            tryDragFill(gamepadIndex)
+            if (!this.dragState.has(gamepadIndex)) {
+                this.playSound("navigate")
             }
         })
 
         this.inputManager.on("left", (gamepadIndex) => {
             if (this.paused) return
             const cursor = this.getCursor(gamepadIndex)
-            const oldX = cursor.x
-            cursor.x = Math.max(0, cursor.x - 1)
-            if (cursor.x !== oldX) {
-                this.updateCursor(gamepadIndex)
-                tryDragFill(gamepadIndex)
-                if (!this.dragState.has(gamepadIndex)) {
-                    this.playSound("navigate")
-                }
+            cursor.x = (cursor.x - 1 + this.puzzle.width) % this.puzzle.width
+            this.updateCursor(gamepadIndex)
+            tryDragFill(gamepadIndex)
+            if (!this.dragState.has(gamepadIndex)) {
+                this.playSound("navigate")
             }
         })
 
         this.inputManager.on("right", (gamepadIndex) => {
             if (this.paused) return
             const cursor = this.getCursor(gamepadIndex)
-            const oldX = cursor.x
-            cursor.x = Math.min(this.puzzle.width - 1, cursor.x + 1)
-            if (cursor.x !== oldX) {
-                this.updateCursor(gamepadIndex)
-                tryDragFill(gamepadIndex)
-                if (!this.dragState.has(gamepadIndex)) {
-                    this.playSound("navigate")
-                }
+            cursor.x = (cursor.x + 1) % this.puzzle.width
+            this.updateCursor(gamepadIndex)
+            tryDragFill(gamepadIndex)
+            if (!this.dragState.has(gamepadIndex)) {
+                this.playSound("navigate")
             }
         })
 

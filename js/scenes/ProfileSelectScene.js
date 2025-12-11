@@ -124,14 +124,14 @@ export class ProfileSelectScene extends Phaser.Scene {
     setupInput() {
         this.inputManager.on("up", () => {
             if (this.confirmingDelete) return
-            this.selectedSlot = Math.max(0, this.selectedSlot - 1)
+            this.selectedSlot = (this.selectedSlot - 1 + 3) % 3
             this.updateSelection()
             this.playSound("navigate")
         })
 
         this.inputManager.on("down", () => {
             if (this.confirmingDelete) return
-            this.selectedSlot = Math.min(2, this.selectedSlot + 1)
+            this.selectedSlot = (this.selectedSlot + 1) % 3
             this.updateSelection()
             this.playSound("navigate")
         })
