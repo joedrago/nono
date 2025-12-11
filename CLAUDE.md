@@ -125,3 +125,5 @@ npm run format
 
 - **phaser**: Game engine (loaded locally from js/lib/)
 - **prettier**: Code formatting (dev)
+- All future puzzles added to puzzles.json must be considered valid by the NonogramValidator class.
+- When requesting to open something in a browser, assume that a local dev server at http://localhost:8080 is already running in the repository root
