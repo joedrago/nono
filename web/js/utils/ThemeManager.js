@@ -70,7 +70,7 @@ export const THEMES = {
         },
 
         // Cursor colors for multiplayer
-        cursorColors: [0x00ff00, 0xff6600, 0x00ffff, 0xff00ff]
+        cursorColors: [0x00ff00, 0xff6600, 0x00ffff, 0xff00ff, 0xffff00, 0xff4444, 0x44ff88, 0xaa88ff]
     },
 
     superMario: {
@@ -140,8 +140,8 @@ export const THEMES = {
             particles: [0xe52521, 0x43b047, 0xfbd000, 0xf8a024, 0x049cd8]
         },
 
-        // Cursor colors for multiplayer (Mario, Luigi, Peach, Toad)
-        cursorColors: [0xe52521, 0x43b047, 0xf699cd, 0x049cd8]
+        // Cursor colors for multiplayer (Mario, Luigi, Peach, Toad, Wario, Waluigi, Daisy, Rosalina)
+        cursorColors: [0xe52521, 0x43b047, 0xf699cd, 0x049cd8, 0xffd700, 0x6b3fa0, 0xf8a024, 0x7dd8e8]
     }
 }
 
