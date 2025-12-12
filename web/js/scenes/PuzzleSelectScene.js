@@ -299,29 +299,28 @@ export class PuzzleSelectScene extends Phaser.Scene {
         if (this.leftArrow) this.leftArrow.destroy()
         if (this.rightArrow) this.rightArrow.destroy()
 
-        const arrowY = this.uiScale.percent(50)
+        this.arrowY = this.uiScale.percent(50)
+        this.arrowSize = this.uiScale.fontSize.title * 1.5
+        this.leftArrowX = this.uiScale.percent(5)
+        this.rightArrowX = this.uiScale.width - this.uiScale.percent(5)
 
-        // Left arrow if we can scroll left
-        if (this.scrollOffset > 0) {
-            this.leftArrow = this.add.text(this.uiScale.percent(3), arrowY, "◀", {
-                fontFamily: theme.font,
-                fontSize: this.uiScale.fontSize.large + "px",
-                color: theme.text.instructions
-            })
-            this.leftArrow.setOrigin(0.5)
-            this.uiContainer.add(this.leftArrow)
-        }
+        // Left arrow
+        this.leftArrow = this.add.text(this.leftArrowX, this.arrowY, "◀", {
+            fontFamily: theme.font,
+            fontSize: this.arrowSize + "px",
+            color: theme.text.instructions
+        })
+        this.leftArrow.setOrigin(0.5)
+        this.uiContainer.add(this.leftArrow)
 
-        // Right arrow if we can scroll right
-        if (this.scrollOffset + this.visibleCols < this.totalCols) {
-            this.rightArrow = this.add.text(this.uiScale.width - this.uiScale.percent(3), arrowY, "▶", {
-                fontFamily: theme.font,
-                fontSize: this.uiScale.fontSize.large + "px",
-                color: theme.text.instructions
-            })
-            this.rightArrow.setOrigin(0.5)
-            this.uiContainer.add(this.rightArrow)
-        }
+        // Right arrow
+        this.rightArrow = this.add.text(this.rightArrowX, this.arrowY, "▶", {
+            fontFamily: theme.font,
+            fontSize: this.arrowSize + "px",
+            color: theme.text.instructions
+        })
+        this.rightArrow.setOrigin(0.5)
+        this.uiContainer.add(this.rightArrow)
     }
 
     setupInput() {
@@ -549,6 +548,32 @@ export class PuzzleSelectScene extends Phaser.Scene {
         }
 
         return nearestIndex
+    }
+
+    // Called by InputManager to determine which button a tap should trigger
+    calcTapButton(x, y) {
+        // Only check arrows in regular mode (not infinite mode)
+        if (this.infiniteMode) return "accept"
+
+        // Check if tap is near an arrow
+        const arrowHitRadius = this.arrowSize * 1.5
+
+        // Check left arrow
+        const dxLeft = x - this.leftArrowX
+        const dyLeft = y - this.arrowY
+        if (Math.sqrt(dxLeft * dxLeft + dyLeft * dyLeft) < arrowHitRadius) {
+            return "left"
+        }
+
+        // Check right arrow
+        const dxRight = x - this.rightArrowX
+        const dyRight = y - this.arrowY
+        if (Math.sqrt(dxRight * dxRight + dyRight * dyRight) < arrowHitRadius) {
+            return "right"
+        }
+
+        // Default to accept for puzzle items
+        return "accept"
     }
 
     refreshGrid() {
