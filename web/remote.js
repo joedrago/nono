@@ -19,7 +19,7 @@
         const gameId = match[1].toUpperCase()
 
         contentEl.innerHTML = `
-            <div class="game-id" onclick="window.location.href='/remote'">${gameId}</div>
+            <a href="/remote" class="game-id">${gameId}</a>
             <div class="controller">
                 <div class="controller-left">
                     <div class="dpad">
@@ -134,7 +134,12 @@
                 socket.emit("action", { key, state: "released" })
             })
 
-            // Gamepad support
+            // Gamepad API on iOS Safari HTTPS requires a user gesture to unlock.
+            // Calling getGamepads() during any touch/click event activates it.
+            const activateGamepad = () => navigator.getGamepads()
+            document.addEventListener("touchstart", activateGamepad)
+            document.addEventListener("mousedown", activateGamepad)
+
             const gamepadHeld = {
                 up: false,
                 down: false,
