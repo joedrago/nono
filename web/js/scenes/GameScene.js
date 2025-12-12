@@ -292,21 +292,48 @@ export class GameScene extends Phaser.Scene {
         this.tapButtonContainer = this.add.container(0, 0)
         this.uiContainer.add(this.tapButtonContainer)
 
-        // Button sizing similar to PuzzleSelectScene arrows
-        this.tapButtonSize = this.uiScale.fontSize.title * 1.5
+        // Check if we're in portrait mode (aspect ratio < 1.0)
+        const aspectRatio = this.uiScale.width / this.uiScale.height
+        const isPortrait = aspectRatio < 1.0
+
+        // Button sizing - half size in portrait mode
+        this.tapButtonSize = this.uiScale.fontSize.title * (isPortrait ? 0.75 : 1.5)
         const buttonSpacing = this.tapButtonSize * 1.5
 
-        // Position buttons to the left of the grid/hints
-        const buttonsX = this.gridOffsetX - this.maxRowHintWidth - this.tapButtonSize
-        const buttonsCenterY = this.gridOffsetY + (this.puzzle.height * this.cellSize) / 2
+        // Position buttons differently based on orientation
+        let fillButtonX, fillButtonY, markButtonX, markButtonY
 
-        // Fill button position (top)
-        this.fillButtonX = buttonsX
-        this.fillButtonY = buttonsCenterY - buttonSpacing / 2
+        if (isPortrait) {
+            // Portrait: center buttons horizontally below the grid
+            const gridBottom = this.gridOffsetY + this.puzzle.height * this.cellSize
+            const buttonsCenterX = this.uiScale.centerX
+            const buttonsCenterY = gridBottom + this.uiScale.percent(5) + this.tapButtonSize / 2
 
-        // Mark button position (bottom)
-        this.markButtonX = buttonsX
-        this.markButtonY = buttonsCenterY + buttonSpacing / 2
+            // Fill button (left)
+            fillButtonX = buttonsCenterX - buttonSpacing / 2
+            fillButtonY = buttonsCenterY
+
+            // Mark button (right)
+            markButtonX = buttonsCenterX + buttonSpacing / 2
+            markButtonY = buttonsCenterY
+        } else {
+            // Landscape: position buttons to the left of the grid/hints
+            const buttonsX = this.gridOffsetX - this.maxRowHintWidth - this.tapButtonSize
+            const buttonsCenterY = this.gridOffsetY + (this.puzzle.height * this.cellSize) / 2
+
+            // Fill button (top)
+            fillButtonX = buttonsX
+            fillButtonY = buttonsCenterY - buttonSpacing / 2
+
+            // Mark button (bottom)
+            markButtonX = buttonsX
+            markButtonY = buttonsCenterY + buttonSpacing / 2
+        }
+
+        this.fillButtonX = fillButtonX
+        this.fillButtonY = fillButtonY
+        this.markButtonX = markButtonX
+        this.markButtonY = markButtonY
 
         // Draw fill button (always filled square)
         const fillSelected = this.tapMode === "fill"
