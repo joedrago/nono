@@ -247,8 +247,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         ordinalText.setOrigin(0.5)
         container.add(ordinalText)
 
-        // Puzzle name
-        const name = this.add.text(0, 0, puzzle.name, {
+        // Puzzle name (hidden if not completed)
+        const displayName = completed ? puzzle.name : "???"
+        const name = this.add.text(0, 0, displayName, {
             fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.small + "px",
             color: theme.text.primary

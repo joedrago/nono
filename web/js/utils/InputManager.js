@@ -297,7 +297,7 @@ export class InputManager {
         }
 
         // Mouse down / Touch start - emit tapMove to teleport, then press button
-        const handlePointerDown = (coords) => {
+        const handlePointerDown = (coords, rightClick = false) => {
             if (!this.activeScene) return
 
             // Release any previously held button before pressing a new one
@@ -314,7 +314,7 @@ export class InputManager {
             // null means don't press any button (e.g., mode switch button was tapped)
             let button = "accept"
             if (this.activeScene.calcTapButton && typeof this.activeScene.calcTapButton === "function") {
-                const result = this.activeScene.calcTapButton(coords.x, coords.y)
+                const result = this.activeScene.calcTapButton(coords.x, coords.y, rightClick)
                 if (result === null) {
                     // Scene handled the tap internally, don't press any button
                     return
@@ -352,15 +352,22 @@ export class InputManager {
             this.emitTapMove(virtualIndex, coords.x, coords.y)
         }
 
-        // Register mouse events
+        // Register mouse events (both left and right click behave the same)
         canvas.addEventListener("mousedown", (event) => {
-            handlePointerDown(getMouseCoords(event))
+            event.preventDefault()
+            const rightClick = event.button === 2
+            handlePointerDown(getMouseCoords(event), rightClick)
         })
-        canvas.addEventListener("mouseup", () => {
+        canvas.addEventListener("mouseup", (event) => {
+            event.preventDefault()
             handlePointerUp()
         })
         canvas.addEventListener("mousemove", (event) => {
             handlePointerMove(getMouseCoords(event))
+        })
+        // Prevent context menu on right-click
+        canvas.addEventListener("contextmenu", (event) => {
+            event.preventDefault()
         })
 
         // Register touch events (first touch only, ignore multitouch)

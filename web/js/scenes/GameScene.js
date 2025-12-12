@@ -242,8 +242,19 @@ export class GameScene extends Phaser.Scene {
         // Draw cursors
         this.drawCursors()
 
-        // Puzzle name
-        this.nameText = this.add.text(this.uiScale.percent(3), this.uiScale.percent(3), this.puzzle.name, {
+        // Puzzle name (or difficulty/ordinal if not completed)
+        const isCompleted = this.saveManager.isPuzzleCompleted(this.puzzle.id)
+        let displayName
+        if (this.infiniteMode) {
+            displayName = "Infinite"
+        } else if (isCompleted) {
+            displayName = this.puzzle.name
+        } else {
+            const ordinalStr = String(this.puzzle.ordinal || 0).padStart(3, "0")
+            const difficultyLabel = this.puzzle.difficulty.charAt(0).toUpperCase() + this.puzzle.difficulty.slice(1)
+            displayName = `${difficultyLabel} #${ordinalStr}`
+        }
+        this.nameText = this.add.text(this.uiScale.percent(3), this.uiScale.percent(3), displayName, {
             fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.medium + "px",
             color: theme.text.subtitle
@@ -297,10 +308,10 @@ export class GameScene extends Phaser.Scene {
         this.markButtonX = buttonsX
         this.markButtonY = buttonsCenterY + buttonSpacing / 2
 
-        // Draw fill button (filled square)
+        // Draw fill button (always filled square)
         const fillSelected = this.tapMode === "fill"
         const fillBg = this.add.graphics()
-        fillBg.fillStyle(fillSelected ? theme.graphics.cellFilled : theme.graphics.panelBg, 1)
+        fillBg.fillStyle(theme.graphics.cellFilled, 1)
         fillBg.fillRoundedRect(
             this.fillButtonX - this.tapButtonSize / 2,
             this.fillButtonY - this.tapButtonSize / 2,
@@ -323,7 +334,7 @@ export class GameScene extends Phaser.Scene {
         // Draw mark button (X mark)
         const markSelected = this.tapMode === "mark"
         const markBg = this.add.graphics()
-        markBg.fillStyle(markSelected ? theme.graphics.panelBg : theme.graphics.panelBg, 1)
+        markBg.fillStyle(theme.graphics.panelBg, 1)
         markBg.fillRoundedRect(
             this.markButtonX - this.tapButtonSize / 2,
             this.markButtonY - this.tapButtonSize / 2,
@@ -331,29 +342,36 @@ export class GameScene extends Phaser.Scene {
             this.tapButtonSize,
             8
         )
+        this.tapButtonContainer.add(markBg)
+
+        // Draw X on mark button (separate graphics object)
+        const markX = this.add.graphics()
+        const xInset = this.tapButtonSize * 0.25
+        markX.lineStyle(4, theme.graphics.cellMarker, 1)
+        markX.moveTo(this.markButtonX - this.tapButtonSize / 2 + xInset, this.markButtonY - this.tapButtonSize / 2 + xInset)
+        markX.lineTo(this.markButtonX + this.tapButtonSize / 2 - xInset, this.markButtonY + this.tapButtonSize / 2 - xInset)
+        markX.moveTo(this.markButtonX + this.tapButtonSize / 2 - xInset, this.markButtonY - this.tapButtonSize / 2 + xInset)
+        markX.lineTo(this.markButtonX - this.tapButtonSize / 2 + xInset, this.markButtonY + this.tapButtonSize / 2 - xInset)
+        markX.strokePath()
+        this.tapButtonContainer.add(markX)
+
+        // Draw selection border for mark button (on top)
         if (markSelected) {
-            markBg.lineStyle(3, theme.graphics.selectionIndicator, 1)
-            markBg.strokeRoundedRect(
+            const markBorder = this.add.graphics()
+            markBorder.lineStyle(3, theme.graphics.selectionIndicator, 1)
+            markBorder.strokeRoundedRect(
                 this.markButtonX - this.tapButtonSize / 2 - 4,
                 this.markButtonY - this.tapButtonSize / 2 - 4,
                 this.tapButtonSize + 8,
                 this.tapButtonSize + 8,
                 10
             )
+            this.tapButtonContainer.add(markBorder)
         }
-        // Draw X on mark button
-        const xInset = this.tapButtonSize * 0.25
-        markBg.lineStyle(4, theme.graphics.cellMarker, 1)
-        markBg.moveTo(this.markButtonX - this.tapButtonSize / 2 + xInset, this.markButtonY - this.tapButtonSize / 2 + xInset)
-        markBg.lineTo(this.markButtonX + this.tapButtonSize / 2 - xInset, this.markButtonY + this.tapButtonSize / 2 - xInset)
-        markBg.moveTo(this.markButtonX + this.tapButtonSize / 2 - xInset, this.markButtonY - this.tapButtonSize / 2 + xInset)
-        markBg.lineTo(this.markButtonX - this.tapButtonSize / 2 + xInset, this.markButtonY + this.tapButtonSize / 2 - xInset)
-        markBg.strokePath()
-        this.tapButtonContainer.add(markBg)
 
         // Draw menu button in top right corner
-        this.menuButtonX = this.uiScale.width - this.uiScale.percent(5)
-        this.menuButtonY = this.uiScale.percent(8)
+        this.menuButtonX = this.uiScale.width - this.uiScale.percent(3) - this.tapButtonSize / 2
+        this.menuButtonY = this.uiScale.percent(3) + this.tapButtonSize / 2
 
         const menuBg = this.add.graphics()
         menuBg.fillStyle(theme.graphics.panelBg, 1)
@@ -838,7 +856,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Called by InputManager to determine which button a tap should trigger
-    calcTapButton(x, y) {
+    calcTapButton(x, y, rightClick = false) {
+        // Right click cycles tap mode and doesn't press any button
+        if (rightClick && !this.paused) {
+            this.tapMode = this.tapMode === "fill" ? "mark" : "fill"
+            this.drawTapButtons()
+            return null
+        }
+
         // When paused, check if tap is outside pause box
         if (this.paused) {
             const outsideBox =
