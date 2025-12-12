@@ -83,15 +83,6 @@ export class MainMenuScene extends Phaser.Scene {
         this.profileText.setOrigin(0, 0.5)
         this.uiContainer.add(this.profileText)
 
-        // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Select", {
-            fontFamily: theme.font,
-            fontSize: this.uiScale.fontSize.small + "px",
-            color: theme.text.instructions
-        })
-        this.instructions.setOrigin(0.5)
-        this.uiContainer.add(this.instructions)
-
         this.updateSelection()
     }
 
