@@ -243,6 +243,91 @@
         button:hover {
             background-color: #5a5a8e;
         }
+
+        /* GameBaby layout for iPhone portrait mode */
+        /* Calibrated from physical button positions */
+        .gamebaby {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .gamebaby .game-id {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 65vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            background-color: #1a1a2e;
+        }
+
+        .gamebaby .dpad {
+            position: absolute;
+            /* D-pad: UP=21.9%,69.1% DOWN=21.1%,81.0% LEFT=8.7%,73.4% RIGHT=34.3%,74.6% */
+            /* Expanded by ~20% for tolerance */
+            left: 3vw;
+            top: 66vh;
+            width: 36vw;
+            height: 18vh;
+        }
+
+        .gamebaby .action-button {
+            position: absolute;
+            width: 22vw;
+            height: 22vw;
+            /* Offset to center button on tap point */
+            transform: translate(-50%, -50%);
+        }
+
+        .gamebaby .action-button.a-btn {
+            left: 90.3vw;
+            top: 69.8vh;
+        }
+
+        .gamebaby .action-button.b-btn {
+            left: 75.1vw;
+            top: 77.7vh;
+        }
+
+        .gamebaby .small-button {
+            position: absolute;
+            width: 18vw;
+            height: 18vw;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            max-width: none;
+            max-height: none;
+        }
+
+        .gamebaby .select-btn {
+            left: 41.0vw;
+            top: 93.0vh;
+        }
+
+        .gamebaby .start-btn {
+            left: 60.7vw;
+            top: 93.2vh;
+        }
+
+        /* Hide elements not used in GameBaby layout */
+        .gamebaby .controller,
+        .gamebaby .button-labels,
+        .gamebaby .button-row,
+        .gamebaby .action-buttons,
+        .gamebaby .center-buttons,
+        .gamebaby .controller-left,
+        .gamebaby .controller-center,
+        .gamebaby .controller-right {
+            display: none;
+        }
+
+        .gamebaby .small-button span {
+            display: none;
+        }
     </style>
 </head>
 <body>

@@ -9,51 +9,107 @@
     document.addEventListener("touchmove", (e) => shouldPreventDefault(e) && e.preventDefault(), { passive: false })
 
     const contentEl = document.getElementById("content")
-    const path = window.location.pathname
 
-    // Check if we have a game ID in the path
-    const match = path.match(/^\/remote\/([A-Za-z]+)$/)
+    // Get game ID from localStorage
+    let gameId = localStorage.getItem("nono-remote-gameId")
 
-    if (match) {
-        // Display the game ID and NES controller layout
-        const gameId = match[1].toUpperCase()
-
+    function showForm() {
+        contentEl.parentElement.classList.remove("gamebaby")
         contentEl.innerHTML = `
-            <a href="/remote" class="game-id">${gameId}</a>
-            <div class="controller">
-                <div class="controller-left">
-                    <div class="dpad">
-                        <div class="dpad-up" data-key="up"></div>
-                        <div class="dpad-left" data-key="left"></div>
-                        <div class="dpad-center"></div>
-                        <div class="dpad-right" data-key="right"></div>
-                        <div class="dpad-down" data-key="down"></div>
-                    </div>
-                </div>
-                <div class="controller-center">
-                    <div class="center-buttons">
-                        <div class="small-button select-btn" data-key="select">
-                            <span>SELECT</span>
-                        </div>
-                        <div class="small-button start-btn" data-key="start">
-                            <span>START</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="controller-right">
-                    <div class="action-buttons">
-                        <div class="button-labels">
-                            <span>B</span>
-                            <span>A</span>
-                        </div>
-                        <div class="button-row">
-                            <div class="action-button b-btn" data-key="b"></div>
-                            <div class="action-button a-btn" data-key="a"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <h1>Enter Game ID</h1>
+            <form id="gameIdForm">
+                <input type="text" id="gameIdInput" maxlength="4" placeholder="XXXX" required autofocus>
+                <button type="submit">Connect</button>
+            </form>
         `
+
+        document.getElementById("gameIdForm").addEventListener("submit", (e) => {
+            e.preventDefault()
+            const input = document.getElementById("gameIdInput").value.toUpperCase()
+            if (input.length > 0) {
+                localStorage.setItem("nono-remote-gameId", input)
+                gameId = input
+                showController()
+            }
+        })
+    }
+
+    function showController() {
+        // Detect iPhone in portrait mode or standalone (home screen) for GameBaby layout
+        const isIPhone = /iPhone/.test(navigator.userAgent)
+        const isPortrait = window.innerHeight > window.innerWidth
+        const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches
+        // If standalone is true, we're on iOS home screen even if userAgent doesn't say iPhone
+        const useGameBaby = (isIPhone && isPortrait) || isStandalone
+
+        if (useGameBaby) {
+            // GameBaby layout - calibrated button positions
+            contentEl.parentElement.classList.add("gamebaby")
+            contentEl.innerHTML = `
+                <div id="gameIdDisplay" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:1rem 2rem;font-size:2rem;background:#2a2a4e;border-radius:8px;z-index:100;">${gameId}</div>
+                <div class="dpad">
+                    <div class="dpad-up" data-key="up"></div>
+                    <div class="dpad-left" data-key="left"></div>
+                    <div class="dpad-center"></div>
+                    <div class="dpad-right" data-key="right"></div>
+                    <div class="dpad-down" data-key="down"></div>
+                </div>
+                <div class="action-button a-btn" data-key="a"></div>
+                <div class="action-button b-btn" data-key="b"></div>
+                <div class="small-button select-btn" data-key="select"></div>
+                <div class="small-button start-btn" data-key="start"></div>
+            `
+
+            // Tap game ID to change it
+            document.getElementById("gameIdDisplay").addEventListener("touchstart", (e) => {
+                e.preventDefault()
+                showForm()
+            }, { passive: false })
+        } else {
+            // Standard NES controller layout
+            contentEl.parentElement.classList.remove("gamebaby")
+            contentEl.innerHTML = `
+                <div class="game-id" id="gameIdDisplay">${gameId}</div>
+                <div class="controller">
+                    <div class="controller-left">
+                        <div class="dpad">
+                            <div class="dpad-up" data-key="up"></div>
+                            <div class="dpad-left" data-key="left"></div>
+                            <div class="dpad-center"></div>
+                            <div class="dpad-right" data-key="right"></div>
+                            <div class="dpad-down" data-key="down"></div>
+                        </div>
+                    </div>
+                    <div class="controller-center">
+                        <div class="center-buttons">
+                            <div class="small-button select-btn" data-key="select">
+                                <span>SELECT</span>
+                            </div>
+                            <div class="small-button start-btn" data-key="start">
+                                <span>START</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="controller-right">
+                        <div class="action-buttons">
+                            <div class="button-labels">
+                                <span>B</span>
+                                <span>A</span>
+                            </div>
+                            <div class="button-row">
+                                <div class="action-button b-btn" data-key="b"></div>
+                                <div class="action-button a-btn" data-key="a"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `
+
+            // Click/tap game ID to change it
+            document.getElementById("gameIdDisplay").addEventListener("click", () => {
+                showForm()
+            })
+        }
 
         // Connect to socket.io and register as a remote
         import("/socket.io/socket.io.esm.min.js").then((module) => {
@@ -270,14 +326,12 @@
             // Start gamepad polling
             requestAnimationFrame(pollGamepads)
         })
+    }
+
+    // Start with form if no game ID, otherwise show controller
+    if (gameId) {
+        showController()
     } else {
-        // Show the form
-        contentEl.innerHTML = `
-            <h1>Enter Game ID</h1>
-            <form method="POST" action="/remote">
-                <input type="text" name="gameId" maxlength="4" placeholder="XXXX" required autofocus>
-                <button type="submit">Connect</button>
-            </form>
-        `
+        showForm()
     }
 })()
