@@ -135,6 +135,10 @@ export class InputManager {
     getTapVirtualIndex() {
         if (this.tapVirtualIndex === null) {
             this.tapVirtualIndex = this.registerVirtualGamepad(GAMEPAD_TYPE.TAP, "tap")
+            // Trigger a resize on the active scene to redraw UI with tap buttons
+            if (this.activeScene && typeof this.activeScene.handleResize === "function") {
+                this.activeScene.handleResize()
+            }
         }
         return this.tapVirtualIndex
     }
