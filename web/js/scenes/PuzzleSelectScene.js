@@ -604,11 +604,15 @@ export class PuzzleSelectScene extends Phaser.Scene {
     // Called by InputManager to determine which button a tap should trigger
     calcTapButton(x, y) {
         // Check back button first (available in both modes)
+        // Use tight bounding box check
         if (this.backButtonSize) {
-            const backHitRadius = this.backButtonSize * 1.5
-            const dxBack = x - this.backButtonX
-            const dyBack = y - this.backButtonY
-            if (Math.sqrt(dxBack * dxBack + dyBack * dyBack) < backHitRadius) {
+            const halfSize = this.backButtonSize / 2
+            if (
+                x >= this.backButtonX - halfSize &&
+                x <= this.backButtonX + halfSize &&
+                y >= this.backButtonY - halfSize &&
+                y <= this.backButtonY + halfSize
+            ) {
                 return "back"
             }
         }
@@ -616,20 +620,26 @@ export class PuzzleSelectScene extends Phaser.Scene {
         // Only check arrows in regular mode (not infinite mode)
         if (this.infiniteMode) return "accept"
 
-        // Check if tap is near an arrow
-        const arrowHitRadius = this.arrowSize * 1.5
+        // Check if tap is within arrow bounding box (tight hit detection)
+        const halfSize = this.arrowSize / 2
 
         // Check left arrow
-        const dxLeft = x - this.leftArrowX
-        const dyLeft = y - this.arrowY
-        if (Math.sqrt(dxLeft * dxLeft + dyLeft * dyLeft) < arrowHitRadius) {
+        if (
+            x >= this.leftArrowX - halfSize &&
+            x <= this.leftArrowX + halfSize &&
+            y >= this.arrowY - halfSize &&
+            y <= this.arrowY + halfSize
+        ) {
             return "left"
         }
 
         // Check right arrow
-        const dxRight = x - this.rightArrowX
-        const dyRight = y - this.arrowY
-        if (Math.sqrt(dxRight * dxRight + dyRight * dyRight) < arrowHitRadius) {
+        if (
+            x >= this.rightArrowX - halfSize &&
+            x <= this.rightArrowX + halfSize &&
+            y >= this.arrowY - halfSize &&
+            y <= this.arrowY + halfSize
+        ) {
             return "right"
         }
 
