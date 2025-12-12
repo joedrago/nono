@@ -350,6 +350,31 @@ export class GameScene extends Phaser.Scene {
         markBg.lineTo(this.markButtonX - this.tapButtonSize / 2 + xInset, this.markButtonY + this.tapButtonSize / 2 - xInset)
         markBg.strokePath()
         this.tapButtonContainer.add(markBg)
+
+        // Draw menu button in top right corner
+        this.menuButtonX = this.uiScale.width - this.uiScale.percent(5)
+        this.menuButtonY = this.uiScale.percent(8)
+
+        const menuBg = this.add.graphics()
+        menuBg.fillStyle(theme.graphics.panelBg, 1)
+        menuBg.fillRoundedRect(
+            this.menuButtonX - this.tapButtonSize / 2,
+            this.menuButtonY - this.tapButtonSize / 2,
+            this.tapButtonSize,
+            this.tapButtonSize,
+            8
+        )
+        // Draw three horizontal lines (hamburger menu icon)
+        const lineInset = this.tapButtonSize * 0.25
+        const lineSpacing = this.tapButtonSize * 0.2
+        menuBg.lineStyle(3, theme.text.primary, 1)
+        for (let i = -1; i <= 1; i++) {
+            const lineY = this.menuButtonY + i * lineSpacing
+            menuBg.moveTo(this.menuButtonX - this.tapButtonSize / 2 + lineInset, lineY)
+            menuBg.lineTo(this.menuButtonX + this.tapButtonSize / 2 - lineInset, lineY)
+        }
+        menuBg.strokePath()
+        this.tapButtonContainer.add(menuBg)
     }
 
     // Check if a row's hints appear to be satisfied by current player grid
@@ -748,9 +773,17 @@ export class GameScene extends Phaser.Scene {
             }
         })
 
-        // Handle tap/mouse move - teleport cursor to nearest cell
+        // Handle tap/mouse move - teleport cursor to nearest cell or pause menu item
         this.inputManager.on("tapMove", (gamepadIndex, x, y) => {
-            if (this.paused) return
+            if (this.paused) {
+                // Find nearest pause menu item
+                const nearestItem = this.findNearestPauseMenuItem(x, y)
+                if (nearestItem !== -1 && nearestItem !== this.pauseIndex) {
+                    this.pauseIndex = nearestItem
+                    this.updatePauseMenu()
+                }
+                return
+            }
 
             const cell = this.screenToCell(x, y)
             if (cell) {
@@ -763,6 +796,32 @@ export class GameScene extends Phaser.Scene {
                 }
             }
         })
+    }
+
+    // Find the nearest pause menu item to the given screen coordinates
+    findNearestPauseMenuItem(x, y) {
+        if (!this.pauseItems) return -1
+
+        let nearestIndex = -1
+        let nearestDistance = Infinity
+
+        for (let i = 0; i < this.pauseItems.length; i++) {
+            const itemY = this.pauseMenuStartY + i * this.pauseMenuSpacing
+            const itemX = this.uiScale.centerX
+
+            const dx = x - itemX
+            const dy = y - itemY
+            const distance = Math.sqrt(dx * dx + dy * dy)
+
+            // Use a reasonable hit distance
+            const maxDistance = this.uiScale.percent(20)
+            if (distance < maxDistance && distance < nearestDistance) {
+                nearestDistance = distance
+                nearestIndex = i
+            }
+        }
+
+        return nearestIndex
     }
 
     // Convert screen coordinates to grid cell coordinates
@@ -780,6 +839,19 @@ export class GameScene extends Phaser.Scene {
 
     // Called by InputManager to determine which button a tap should trigger
     calcTapButton(x, y) {
+        // When paused, check if tap is outside pause box
+        if (this.paused) {
+            const outsideBox =
+                x < this.pauseBoxX ||
+                x > this.pauseBoxX + this.pauseBoxWidth ||
+                y < this.pauseBoxY ||
+                y > this.pauseBoxY + this.pauseBoxHeight
+            if (outsideBox) {
+                return "start" // Close the pause menu
+            }
+            return "accept" // Select menu item
+        }
+
         // Check if tap is on one of the mode buttons
         if (this.tapButtonSize) {
             const hitRadius = this.tapButtonSize * 0.75
@@ -805,6 +877,13 @@ export class GameScene extends Phaser.Scene {
                 }
                 return null // Don't press any button
             }
+
+            // Check menu button
+            const dxMenu = x - this.menuButtonX
+            const dyMenu = y - this.menuButtonY
+            if (Math.sqrt(dxMenu * dxMenu + dyMenu * dyMenu) < hitRadius) {
+                return "start"
+            }
         }
 
         // Return button based on current tap mode
@@ -820,18 +899,14 @@ export class GameScene extends Phaser.Scene {
         this.pauseOverlay.fillStyle(theme.graphics.overlayBg, 0.7)
         this.pauseOverlay.fillRect(0, 0, this.uiScale.width, this.uiScale.height)
 
-        const boxWidth = this.uiScale.percent(50)
-        const boxHeight = this.uiScale.percent(48)
+        this.pauseBoxWidth = this.uiScale.percent(50)
+        this.pauseBoxHeight = this.uiScale.percent(48)
+        this.pauseBoxX = this.uiScale.centerX - this.pauseBoxWidth / 2
+        this.pauseBoxY = this.uiScale.centerY - this.pauseBoxHeight / 2
 
         this.pauseBox = this.add.graphics()
         this.pauseBox.fillStyle(theme.graphics.panelBg, 1)
-        this.pauseBox.fillRoundedRect(
-            this.uiScale.centerX - boxWidth / 2,
-            this.uiScale.centerY - boxHeight / 2,
-            boxWidth,
-            boxHeight,
-            12
-        )
+        this.pauseBox.fillRoundedRect(this.pauseBoxX, this.pauseBoxY, this.pauseBoxWidth, this.pauseBoxHeight, 12)
 
         this.pauseTitle = this.add.text(this.uiScale.centerX, this.uiScale.centerY - this.uiScale.percent(10), "PAUSED", {
             fontFamily: theme.font,
@@ -848,11 +923,11 @@ export class GameScene extends Phaser.Scene {
             "Exit"
         ]
         this.pauseTexts = []
-        const startY = this.uiScale.centerY - this.uiScale.percent(4)
-        const spacing = this.uiScale.percent(6)
+        this.pauseMenuStartY = this.uiScale.centerY - this.uiScale.percent(4)
+        this.pauseMenuSpacing = this.uiScale.percent(6)
 
         this.pauseItems.forEach((item, i) => {
-            const text = this.add.text(this.uiScale.centerX, startY + i * spacing, item, {
+            const text = this.add.text(this.uiScale.centerX, this.pauseMenuStartY + i * this.pauseMenuSpacing, item, {
                 fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.medium + "px",
                 color: theme.text.secondary
