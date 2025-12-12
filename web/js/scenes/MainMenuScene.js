@@ -15,7 +15,16 @@ export class MainMenuScene extends Phaser.Scene {
         this.saveManager = new SaveManager()
         this.themeManager = new ThemeManager(this.saveManager)
 
-        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Themes", "Change Profile", "Fullscreen", "Quit"]
+        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Themes", "Change Profile"]
+
+        // Only show Fullscreen option if the Fullscreen API is supported and we're not on iOS
+        // iOS Safari's fullscreen implementation has poor UX (swipe down to exit prompt)
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+        if (document.fullscreenEnabled && !isIOS) {
+            this.menuItems.push("Fullscreen")
+        }
+
+        this.menuItems.push("Quit")
         this.selectedIndex = 0
 
         // Set background color from theme
@@ -139,26 +148,27 @@ export class MainMenuScene extends Phaser.Scene {
 
         this.inputManager.on("accept", () => {
             this.playSound("select")
-            switch (this.selectedIndex) {
-                case 0: // Play
+            const selectedItem = this.menuItems[this.selectedIndex]
+            switch (selectedItem) {
+                case "Play":
                     this.scene.start("PuzzleSelectScene")
                     break
-                case 1: // Infinite Mode
+                case "Infinite Mode":
                     this.scene.start("PuzzleSelectScene", { infinite: true })
                     break
-                case 2: // Achievements
+                case "Achievements":
                     this.scene.start("AchievementsScene")
                     break
-                case 3: // Themes
+                case "Themes":
                     this.scene.start("ThemeSelectScene")
                     break
-                case 4: // Change Profile
+                case "Change Profile":
                     this.scene.start("ProfileSelectScene")
                     break
-                case 5: // Fullscreen
+                case "Fullscreen":
                     this.toggleFullscreen()
                     break
-                case 6: // Quit
+                case "Quit":
                     window.close()
                     break
             }
