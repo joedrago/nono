@@ -64,9 +64,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.uiContainer.add(this.title)
 
         // Calculate grid dimensions
-        this.cellHeight = this.uiScale.percent(18)
+        this.cellHeight = this.uiScale.percent(9)
         this.cellWidth = this.cellHeight * 2
-        this.cellSpacing = this.uiScale.percent(3)
+        this.cellSpacing = this.uiScale.percent(1.5)
         this.visibleCols = Math.floor((this.uiScale.width * 0.85) / (this.cellWidth + this.cellSpacing))
         this.totalCols = Math.ceil(this.sortedPuzzles.length / this.gridRows)
 
