@@ -17,7 +17,7 @@ export class AchievementsScene extends Phaser.Scene {
         this.themeManager = new ThemeManager(this.saveManager)
         this.achievementManager = new AchievementManager(this.saveManager)
 
-        this.gridCols = 2
+        this.gridCols = 1
         this.selectedIndex = 0
 
         this.achievements = this.achievementManager.getAllAchievements()
