@@ -657,6 +657,35 @@ export class GameScene extends Phaser.Scene {
                 this.refreshUI()
             }
         })
+
+        // Handle tap/mouse move - teleport cursor to nearest cell
+        this.inputManager.on("tapMove", (gamepadIndex, x, y) => {
+            if (this.paused) return
+
+            const cell = this.screenToCell(x, y)
+            if (cell) {
+                const cursor = this.getCursor(gamepadIndex)
+                if (cursor.x !== cell.x || cursor.y !== cell.y) {
+                    cursor.x = cell.x
+                    cursor.y = cell.y
+                    this.updateCursor(gamepadIndex)
+                    tryDragFill(gamepadIndex)
+                }
+            }
+        })
+    }
+
+    // Convert screen coordinates to grid cell coordinates
+    screenToCell(screenX, screenY) {
+        // Calculate cell position
+        const cellX = Math.floor((screenX - this.gridOffsetX) / this.cellSize)
+        const cellY = Math.floor((screenY - this.gridOffsetY) / this.cellSize)
+
+        // Check if within grid bounds
+        if (cellX >= 0 && cellX < this.puzzle.width && cellY >= 0 && cellY < this.puzzle.height) {
+            return { x: cellX, y: cellY }
+        }
+        return null
     }
 
     showPauseMenu() {
