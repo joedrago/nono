@@ -42,6 +42,9 @@ export class GameScene extends Phaser.Scene {
         // Maps gamepadIndex -> { sourceState, targetState }
         this.dragState = new Map()
 
+        // Tap mode for touch/mouse input: "fill" or "mark"
+        this.tapMode = "fill"
+
         // Initialize or load puzzle state
         if (this.infiniteMode) {
             this.generateInfinitePuzzle()
@@ -260,6 +263,93 @@ export class GameScene extends Phaser.Scene {
         )
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
+
+        // Draw tap mode buttons if tap input is active
+        this.drawTapButtons()
+    }
+
+    drawTapButtons() {
+        // Clean up old buttons
+        if (this.tapButtonContainer) {
+            this.tapButtonContainer.destroy()
+        }
+
+        // Only draw if tap is active
+        if (!this.inputManager.tapActive()) return
+
+        const theme = this.themeManager.getTheme()
+        this.tapButtonContainer = this.add.container(0, 0)
+        this.uiContainer.add(this.tapButtonContainer)
+
+        // Button sizing similar to PuzzleSelectScene arrows
+        this.tapButtonSize = this.uiScale.fontSize.title * 1.5
+        const buttonSpacing = this.tapButtonSize * 1.5
+
+        // Position buttons to the left of the grid/hints
+        const buttonsX = this.gridOffsetX - this.maxRowHintWidth - this.tapButtonSize
+        const buttonsCenterY = this.gridOffsetY + (this.puzzle.height * this.cellSize) / 2
+
+        // Fill button position (top)
+        this.fillButtonX = buttonsX
+        this.fillButtonY = buttonsCenterY - buttonSpacing / 2
+
+        // Mark button position (bottom)
+        this.markButtonX = buttonsX
+        this.markButtonY = buttonsCenterY + buttonSpacing / 2
+
+        // Draw fill button (filled square)
+        const fillSelected = this.tapMode === "fill"
+        const fillBg = this.add.graphics()
+        fillBg.fillStyle(fillSelected ? theme.graphics.cellFilled : theme.graphics.panelBg, 1)
+        fillBg.fillRoundedRect(
+            this.fillButtonX - this.tapButtonSize / 2,
+            this.fillButtonY - this.tapButtonSize / 2,
+            this.tapButtonSize,
+            this.tapButtonSize,
+            8
+        )
+        if (fillSelected) {
+            fillBg.lineStyle(3, theme.graphics.selectionIndicator, 1)
+            fillBg.strokeRoundedRect(
+                this.fillButtonX - this.tapButtonSize / 2 - 4,
+                this.fillButtonY - this.tapButtonSize / 2 - 4,
+                this.tapButtonSize + 8,
+                this.tapButtonSize + 8,
+                10
+            )
+        }
+        this.tapButtonContainer.add(fillBg)
+
+        // Draw mark button (X mark)
+        const markSelected = this.tapMode === "mark"
+        const markBg = this.add.graphics()
+        markBg.fillStyle(markSelected ? theme.graphics.panelBg : theme.graphics.panelBg, 1)
+        markBg.fillRoundedRect(
+            this.markButtonX - this.tapButtonSize / 2,
+            this.markButtonY - this.tapButtonSize / 2,
+            this.tapButtonSize,
+            this.tapButtonSize,
+            8
+        )
+        if (markSelected) {
+            markBg.lineStyle(3, theme.graphics.selectionIndicator, 1)
+            markBg.strokeRoundedRect(
+                this.markButtonX - this.tapButtonSize / 2 - 4,
+                this.markButtonY - this.tapButtonSize / 2 - 4,
+                this.tapButtonSize + 8,
+                this.tapButtonSize + 8,
+                10
+            )
+        }
+        // Draw X on mark button
+        const xInset = this.tapButtonSize * 0.25
+        markBg.lineStyle(4, theme.graphics.cellMarker, 1)
+        markBg.moveTo(this.markButtonX - this.tapButtonSize / 2 + xInset, this.markButtonY - this.tapButtonSize / 2 + xInset)
+        markBg.lineTo(this.markButtonX + this.tapButtonSize / 2 - xInset, this.markButtonY + this.tapButtonSize / 2 - xInset)
+        markBg.moveTo(this.markButtonX + this.tapButtonSize / 2 - xInset, this.markButtonY - this.tapButtonSize / 2 + xInset)
+        markBg.lineTo(this.markButtonX - this.tapButtonSize / 2 + xInset, this.markButtonY + this.tapButtonSize / 2 - xInset)
+        markBg.strokePath()
+        this.tapButtonContainer.add(markBg)
     }
 
     // Check if a row's hints appear to be satisfied by current player grid
@@ -686,6 +776,39 @@ export class GameScene extends Phaser.Scene {
             return { x: cellX, y: cellY }
         }
         return null
+    }
+
+    // Called by InputManager to determine which button a tap should trigger
+    calcTapButton(x, y) {
+        // Check if tap is on one of the mode buttons
+        if (this.tapButtonSize) {
+            const hitRadius = this.tapButtonSize * 0.75
+
+            // Check fill button
+            const dxFill = x - this.fillButtonX
+            const dyFill = y - this.fillButtonY
+            if (Math.sqrt(dxFill * dxFill + dyFill * dyFill) < hitRadius) {
+                if (this.tapMode !== "fill") {
+                    this.tapMode = "fill"
+                    this.drawTapButtons()
+                }
+                return null // Don't press any button
+            }
+
+            // Check mark button
+            const dxMark = x - this.markButtonX
+            const dyMark = y - this.markButtonY
+            if (Math.sqrt(dxMark * dxMark + dyMark * dyMark) < hitRadius) {
+                if (this.tapMode !== "mark") {
+                    this.tapMode = "mark"
+                    this.drawTapButtons()
+                }
+                return null // Don't press any button
+            }
+        }
+
+        // Return button based on current tap mode
+        return this.tapMode === "fill" ? "accept" : "back"
     }
 
     showPauseMenu() {

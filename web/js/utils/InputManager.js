@@ -311,9 +311,15 @@ export class InputManager {
             this.emitTapMove(virtualIndex, coords.x, coords.y)
 
             // Ask scene which button this tap should be, default to "accept"
+            // null means don't press any button (e.g., mode switch button was tapped)
             let button = "accept"
             if (this.activeScene.calcTapButton && typeof this.activeScene.calcTapButton === "function") {
-                button = this.activeScene.calcTapButton(coords.x, coords.y) || "accept"
+                const result = this.activeScene.calcTapButton(coords.x, coords.y)
+                if (result === null) {
+                    // Scene handled the tap internally, don't press any button
+                    return
+                }
+                button = result || "accept"
             }
 
             // Press the determined button
