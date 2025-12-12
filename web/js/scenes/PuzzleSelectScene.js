@@ -84,6 +84,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         })
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
+
+        // Draw back button for tap mode
+        this.drawBackButton()
     }
 
     createInfiniteUI() {
@@ -136,6 +139,53 @@ export class PuzzleSelectScene extends Phaser.Scene {
         })
         this.instructions.setOrigin(0.5)
         this.uiContainer.add(this.instructions)
+
+        // Draw back button for tap mode
+        this.drawBackButton()
+    }
+
+    drawBackButton() {
+        // Only draw if tap is active
+        if (!this.inputManager.tapActive()) return
+
+        const theme = this.themeManager.getTheme()
+
+        // Button sizing similar to arrows
+        this.backButtonSize = this.uiScale.fontSize.title * 1.5
+
+        // Position in top right corner
+        this.backButtonX = this.uiScale.width - this.uiScale.percent(3) - this.backButtonSize / 2
+        this.backButtonY = this.uiScale.percent(3) + this.backButtonSize / 2
+
+        // Draw button background
+        const backBg = this.add.graphics()
+        backBg.fillStyle(theme.graphics.panelBg, 1)
+        backBg.fillRoundedRect(
+            this.backButtonX - this.backButtonSize / 2,
+            this.backButtonY - this.backButtonSize / 2,
+            this.backButtonSize,
+            this.backButtonSize,
+            8
+        )
+
+        // Draw back arrow
+        const arrowInset = this.backButtonSize * 0.25
+        backBg.lineStyle(4, theme.text.primary, 1)
+        // Arrow pointing left: <
+        const arrowLeft = this.backButtonX - this.backButtonSize / 2 + arrowInset
+        const arrowRight = this.backButtonX + this.backButtonSize / 2 - arrowInset
+        const arrowMid = this.backButtonX
+        const arrowTop = this.backButtonY - this.backButtonSize / 2 + arrowInset
+        const arrowBottom = this.backButtonY + this.backButtonSize / 2 - arrowInset
+        backBg.moveTo(arrowMid, arrowTop)
+        backBg.lineTo(arrowLeft, this.backButtonY)
+        backBg.lineTo(arrowMid, arrowBottom)
+        // Horizontal line from arrow point
+        backBg.moveTo(arrowLeft, this.backButtonY)
+        backBg.lineTo(arrowRight, this.backButtonY)
+        backBg.strokePath()
+
+        this.uiContainer.add(backBg)
     }
 
     createDiffButton(text, solvedCount, y, _index) {
@@ -553,6 +603,16 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
     // Called by InputManager to determine which button a tap should trigger
     calcTapButton(x, y) {
+        // Check back button first (available in both modes)
+        if (this.backButtonSize) {
+            const backHitRadius = this.backButtonSize * 1.5
+            const dxBack = x - this.backButtonX
+            const dyBack = y - this.backButtonY
+            if (Math.sqrt(dxBack * dxBack + dyBack * dyBack) < backHitRadius) {
+                return "back"
+            }
+        }
+
         // Only check arrows in regular mode (not infinite mode)
         if (this.infiniteMode) return "accept"
 
