@@ -346,10 +346,10 @@ export class InputManager {
         const handlePointerMove = (coords) => {
             if (!this.activeScene) return
 
-            // Lazily initialize tap as a virtual gamepad on first input
-            const virtualIndex = this.getTapVirtualIndex()
+            // Only emit tap move if tap is already active (don't lazily initialize)
+            if (!this.tapActive()) return
 
-            this.emitTapMove(virtualIndex, coords.x, coords.y)
+            this.emitTapMove(this.tapVirtualIndex, coords.x, coords.y)
         }
 
         // Register mouse events (both left and right click behave the same)
