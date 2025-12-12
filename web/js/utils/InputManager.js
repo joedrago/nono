@@ -371,66 +371,83 @@ export class InputManager {
         })
 
         // Register touch events (first touch only, ignore multitouch)
-        canvas.addEventListener("touchstart", (event) => {
-            event.preventDefault() // Prevent scrolling/zooming
+        // Use { passive: false } to allow preventDefault() to work in modern browsers
+        canvas.addEventListener(
+            "touchstart",
+            (event) => {
+                event.preventDefault() // Prevent scrolling/zooming
 
-            // Only track the first touch
-            if (this.activeTouchId !== null) return
-            if (event.touches.length === 0) return
+                // Only track the first touch
+                if (this.activeTouchId !== null) return
+                if (event.touches.length === 0) return
 
-            const touch = event.touches[0]
-            this.activeTouchId = touch.identifier
+                const touch = event.touches[0]
+                this.activeTouchId = touch.identifier
 
-            const coords = getTouchCoords(event, this.activeTouchId)
-            if (coords) {
-                handlePointerDown(coords)
-            }
-        })
-        canvas.addEventListener("touchend", (event) => {
-            event.preventDefault()
-
-            // Only respond to the tracked touch ending
-            if (this.activeTouchId === null) return
-
-            // Check if our tracked touch is in changedTouches (ended touches)
-            let foundTouch = false
-            for (const touch of event.changedTouches) {
-                if (touch.identifier === this.activeTouchId) {
-                    foundTouch = true
-                    break
+                const coords = getTouchCoords(event, this.activeTouchId)
+                if (coords) {
+                    handlePointerDown(coords)
                 }
-            }
+            },
+            { passive: false }
+        )
+        canvas.addEventListener(
+            "touchend",
+            (event) => {
+                event.preventDefault()
 
-            if (foundTouch) {
-                this.activeTouchId = null
-                handlePointerUp()
-            }
-        })
-        canvas.addEventListener("touchmove", (event) => {
-            event.preventDefault()
+                // Only respond to the tracked touch ending
+                if (this.activeTouchId === null) return
 
-            // Only respond to the tracked touch
-            if (this.activeTouchId === null) return
+                // Check if our tracked touch is in changedTouches (ended touches)
+                let foundTouch = false
+                for (const touch of event.changedTouches) {
+                    if (touch.identifier === this.activeTouchId) {
+                        foundTouch = true
+                        break
+                    }
+                }
 
-            const coords = getTouchCoords(event, this.activeTouchId)
-            if (coords) {
-                handlePointerMove(coords)
-            }
-        })
-        canvas.addEventListener("touchcancel", (event) => {
-            event.preventDefault()
-
-            // Treat cancel same as end for our tracked touch
-            if (this.activeTouchId === null) return
-
-            for (const touch of event.changedTouches) {
-                if (touch.identifier === this.activeTouchId) {
+                if (foundTouch) {
                     this.activeTouchId = null
                     handlePointerUp()
-                    break
                 }
-            }
-        })
+            },
+            { passive: false }
+        )
+        canvas.addEventListener(
+            "touchmove",
+            (event) => {
+                event.preventDefault()
+
+                // Only respond to the tracked touch
+                if (this.activeTouchId === null) return
+
+                const coords = getTouchCoords(event, this.activeTouchId)
+                if (coords) {
+                    handlePointerMove(coords)
+                }
+            },
+            { passive: false }
+        )
+        canvas.addEventListener(
+            "touchcancel",
+            (event) => {
+                event.preventDefault()
+
+                // Treat cancel same as end for our tracked touch
+                if (this.activeTouchId === null) return
+
+                for (const touch of event.changedTouches) {
+                    if (touch.identifier === this.activeTouchId) {
+                        this.activeTouchId = null
+                        handlePointerUp()
+                        break
+                    }
+                }
+            },
+            { passive: false }
+        )
     }
 
     // Emit tapMove event with coordinates
