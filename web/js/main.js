@@ -69,4 +69,12 @@ const game = new Phaser.Game(config)
 game.events.once("ready", () => {
     const inputManager = new InputManager(game)
     window.nonoInputManager = inputManager
+
+    // Global resize handler - call handleResize on the active scene
+    game.scale.on("resize", () => {
+        const activeScene = game.scene.getScenes(true)[0]
+        if (activeScene && typeof activeScene.handleResize === "function") {
+            activeScene.handleResize()
+        }
+    })
 })
