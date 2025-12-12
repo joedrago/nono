@@ -22,7 +22,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.difficulties = ["easy", "medium", "hard"]
         this.difficultyLabels = { easy: "Easy (5x5)", medium: "Medium (10x10)", hard: "Hard (15x15)" }
 
-        this.gridRows = 3
+        this.gridRows = 6
         this.selectedIndex = 0
         this.scrollOffset = 0 // How many columns scrolled to the right
 
