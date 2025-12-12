@@ -261,19 +261,21 @@ export class GameScene extends Phaser.Scene {
         })
         this.uiContainer.add(this.nameText)
 
-        // Instructions
-        this.instructions = this.add.text(
-            this.uiScale.centerX,
-            this.uiScale.percent(95),
-            "[A] Fill   [B] Mark X   [Start] Menu",
-            {
-                fontFamily: theme.font,
-                fontSize: this.uiScale.fontSize.small + "px",
-                color: theme.text.instructions
-            }
-        )
-        this.instructions.setOrigin(0.5)
-        this.uiContainer.add(this.instructions)
+        // Instructions (hide on touch devices)
+        if (!window.nonoTouchDevice) {
+            this.instructions = this.add.text(
+                this.uiScale.centerX,
+                this.uiScale.percent(95),
+                "[A] Fill   [B] Mark X   [Start] Menu",
+                {
+                    fontFamily: theme.font,
+                    fontSize: this.uiScale.fontSize.small + "px",
+                    color: theme.text.instructions
+                }
+            )
+            this.instructions.setOrigin(0.5)
+            this.uiContainer.add(this.instructions)
+        }
 
         // Draw tap mode buttons if tap input is active
         this.drawTapButtons()
@@ -396,12 +398,12 @@ export class GameScene extends Phaser.Scene {
             this.tapButtonContainer.add(markBorder)
         }
 
-        // Draw menu button in top right corner
+        // Draw menu button in top right corner (50% transparency)
         this.menuButtonX = this.uiScale.width - this.uiScale.percent(3) - this.tapButtonSize / 2
         this.menuButtonY = this.uiScale.percent(3) + this.tapButtonSize / 2
 
         const menuBg = this.add.graphics()
-        menuBg.fillStyle(theme.graphics.panelBg, 1)
+        menuBg.fillStyle(theme.graphics.panelBg, 0.5)
         menuBg.fillRoundedRect(
             this.menuButtonX - this.tapButtonSize / 2,
             this.menuButtonY - this.tapButtonSize / 2,

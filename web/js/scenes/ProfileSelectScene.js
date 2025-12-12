@@ -47,19 +47,21 @@ export class ProfileSelectScene extends Phaser.Scene {
             this.uiContainer.add(slot.container)
         }
 
-        // Instructions
-        this.instructions = this.add.text(
-            this.uiScale.centerX,
-            this.uiScale.percent(88),
-            "[A] Select   [Select] Delete Profile",
-            {
-                fontFamily: "monospace",
-                fontSize: this.uiScale.fontSize.small + "px",
-                color: "#8888aa"
-            }
-        )
-        this.instructions.setOrigin(0.5)
-        this.uiContainer.add(this.instructions)
+        // Instructions (hide on touch devices)
+        if (!window.nonoTouchDevice) {
+            this.instructions = this.add.text(
+                this.uiScale.centerX,
+                this.uiScale.percent(88),
+                "[A] Select   [Select] Delete Profile",
+                {
+                    fontFamily: "monospace",
+                    fontSize: this.uiScale.fontSize.small + "px",
+                    color: "#8888aa"
+                }
+            )
+            this.instructions.setOrigin(0.5)
+            this.uiContainer.add(this.instructions)
+        }
 
         this.updateSelection()
     }

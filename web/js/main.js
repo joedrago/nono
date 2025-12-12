@@ -13,6 +13,9 @@ import { InputManager } from "./utils/InputManager.js"
 const params = new URLSearchParams(window.location.search)
 const offline = params.get("offline") === "true"
 
+// Detect touch devices (iPhone, iPad, Android)
+window.nonoTouchDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
 let socket = null
 let remoteControl = null
 

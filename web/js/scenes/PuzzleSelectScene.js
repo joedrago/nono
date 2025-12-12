@@ -76,14 +76,16 @@ export class PuzzleSelectScene extends Phaser.Scene {
         // Scroll indicator
         this.updateScrollIndicator()
 
-        // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[A] Select   [B] Back", {
-            fontFamily: theme.font,
-            fontSize: this.uiScale.fontSize.small + "px",
-            color: theme.text.instructions
-        })
-        this.instructions.setOrigin(0.5)
-        this.uiContainer.add(this.instructions)
+        // Instructions (hide on touch devices)
+        if (!window.nonoTouchDevice) {
+            this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[A] Select   [B] Back", {
+                fontFamily: theme.font,
+                fontSize: this.uiScale.fontSize.small + "px",
+                color: theme.text.instructions
+            })
+            this.instructions.setOrigin(0.5)
+            this.uiContainer.add(this.instructions)
+        }
 
         // Draw back button for tap mode
         this.drawBackButton()
@@ -131,14 +133,16 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.selectedIndex = 0
         this.updateInfiniteSelection()
 
-        // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Start   [B] Back", {
-            fontFamily: theme.font,
-            fontSize: this.uiScale.fontSize.small + "px",
-            color: theme.text.instructions
-        })
-        this.instructions.setOrigin(0.5)
-        this.uiContainer.add(this.instructions)
+        // Instructions (hide on touch devices)
+        if (!window.nonoTouchDevice) {
+            this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(88), "[A] Start   [B] Back", {
+                fontFamily: theme.font,
+                fontSize: this.uiScale.fontSize.small + "px",
+                color: theme.text.instructions
+            })
+            this.instructions.setOrigin(0.5)
+            this.uiContainer.add(this.instructions)
+        }
 
         // Draw back button for tap mode
         this.drawBackButton()
@@ -157,9 +161,9 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.backButtonX = this.uiScale.width - this.uiScale.percent(3) - this.backButtonSize / 2
         this.backButtonY = this.uiScale.percent(3) + this.backButtonSize / 2
 
-        // Draw button background
+        // Draw button background (50% transparency)
         const backBg = this.add.graphics()
-        backBg.fillStyle(theme.graphics.panelBg, 1)
+        backBg.fillStyle(theme.graphics.panelBg, 0.5)
         backBg.fillRoundedRect(
             this.backButtonX - this.backButtonSize / 2,
             this.backButtonY - this.backButtonSize / 2,

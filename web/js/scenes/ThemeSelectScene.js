@@ -52,14 +52,16 @@ export class ThemeSelectScene extends Phaser.Scene {
         // Create theme list
         this.createThemeList()
 
-        // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[A] Select   [B] Back", {
-            fontFamily: theme.font,
-            fontSize: this.uiScale.fontSize.small + "px",
-            color: theme.text.instructions
-        })
-        this.instructions.setOrigin(0.5)
-        this.uiContainer.add(this.instructions)
+        // Instructions (hide on touch devices)
+        if (!window.nonoTouchDevice) {
+            this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[A] Select   [B] Back", {
+                fontFamily: theme.font,
+                fontSize: this.uiScale.fontSize.small + "px",
+                color: theme.text.instructions
+            })
+            this.instructions.setOrigin(0.5)
+            this.uiContainer.add(this.instructions)
+        }
     }
 
     createThemeList() {

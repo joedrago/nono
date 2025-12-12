@@ -58,14 +58,16 @@ export class AchievementsScene extends Phaser.Scene {
         // Create achievement grid
         this.createAchievementGrid()
 
-        // Instructions
-        this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[B] Back", {
-            fontFamily: theme.font,
-            fontSize: this.uiScale.fontSize.small + "px",
-            color: theme.text.instructions
-        })
-        this.instructions.setOrigin(0.5)
-        this.uiContainer.add(this.instructions)
+        // Instructions (hide on touch devices)
+        if (!window.nonoTouchDevice) {
+            this.instructions = this.add.text(this.uiScale.centerX, this.uiScale.percent(90), "[B] Back", {
+                fontFamily: theme.font,
+                fontSize: this.uiScale.fontSize.small + "px",
+                color: theme.text.instructions
+            })
+            this.instructions.setOrigin(0.5)
+            this.uiContainer.add(this.instructions)
+        }
     }
 
     createAchievementGrid() {
