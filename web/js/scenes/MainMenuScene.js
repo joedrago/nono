@@ -15,7 +15,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.saveManager = new SaveManager()
         this.themeManager = new ThemeManager(this.saveManager)
 
-        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Themes", "Change Profile", "Quit"]
+        this.menuItems = ["Play", "Infinite Mode", "Achievements", "Themes", "Change Profile", "Fullscreen", "Quit"]
         this.selectedIndex = 0
 
         // Set background color from theme
@@ -164,7 +164,10 @@ export class MainMenuScene extends Phaser.Scene {
                 case 4: // Change Profile
                     this.scene.start("ProfileSelectScene")
                     break
-                case 5: // Quit
+                case 5: // Fullscreen
+                    this.toggleFullscreen()
+                    break
+                case 6: // Quit
                     window.close()
                     break
             }
@@ -203,6 +206,18 @@ export class MainMenuScene extends Phaser.Scene {
         }
 
         return nearestIndex
+    }
+
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {
+                // Fullscreen request failed, ignore
+            })
+        } else {
+            document.exitFullscreen().catch(() => {
+                // Exit fullscreen failed, ignore
+            })
+        }
     }
 
     handleResize() {
