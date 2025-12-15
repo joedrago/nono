@@ -58,6 +58,10 @@ export class BootScene extends Phaser.Scene {
         // Generate all graphical assets programmatically
         AssetGenerator.generateAssets(this)
 
+        // Try to generate sounds - may fail if AudioContext is suspended (iOS Safari)
+        // In that case, main.js will generate them on first user gesture
+        AssetGenerator.generateSounds(this)
+
         // Store puzzles in registry for access across scenes
         const puzzlesData = this.cache.json.get("puzzles")
         if (puzzlesData) {

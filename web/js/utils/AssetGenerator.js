@@ -108,17 +108,11 @@ export class AssetGenerator {
         graphics.destroy()
     }
 
-    // Generate placeholder sound data (silent audio)
+    // Generate sound effects programmatically using Web Audio API
     static generateSounds(scene) {
-        // Create AudioContext for generating sounds
         const audioContext = scene.sound.context
+        if (!audioContext) return
 
-        if (!audioContext) {
-            console.log("Audio context not available, sounds will be silent")
-            return
-        }
-
-        // Generate simple beep sounds
         AssetGenerator.generateBeep(scene, "navigate", 440, 0.05)
         AssetGenerator.generateBeep(scene, "fill", 523, 0.08)
         AssetGenerator.generateBeep(scene, "mark", 349, 0.08)
@@ -144,12 +138,9 @@ export class AssetGenerator {
                 data[i] = Math.sin(2 * Math.PI * frequency * t) * envelope * 0.3
             }
 
-            scene.cache.audio.add(key, {
-                buffer: buffer,
-                duration: duration
-            })
+            scene.cache.audio.add(key, buffer)
         } catch (_e) {
-            console.log("Could not generate sound:", key)
+            // Silent failure - audio not critical
         }
     }
 
@@ -176,12 +167,9 @@ export class AssetGenerator {
                 data[i] = Math.sin(2 * Math.PI * freq * t) * envelope * 0.3
             }
 
-            scene.cache.audio.add("victory", {
-                buffer: buffer,
-                duration: duration
-            })
+            scene.cache.audio.add("victory", buffer)
         } catch (_e) {
-            console.log("Could not generate victory sound")
+            // Silent failure - audio not critical
         }
     }
 }

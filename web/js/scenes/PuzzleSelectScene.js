@@ -677,7 +677,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
     }
 
     playSound(key) {
-        if (this.sound.get(key)) {
+        if (this.saveManager.getSoundEnabled() && this.cache.audio.exists(key)) {
             this.sound.play(key, { volume: 0.5 })
         }
     }

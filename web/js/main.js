@@ -9,6 +9,7 @@ import { ThemeSelectScene } from "./scenes/ThemeSelectScene.js"
 import { OverlayScene } from "./scenes/OverlayScene.js"
 import { RemoteControl } from "./utils/RemoteControl.js"
 import { InputManager } from "./utils/InputManager.js"
+import { AssetGenerator } from "./utils/AssetGenerator.js"
 
 const params = new URLSearchParams(window.location.search)
 const offline = params.get("offline") === "true"
@@ -80,4 +81,39 @@ game.events.once("ready", () => {
             activeScene.handleResize()
         }
     })
+
+    // Audio unlock - browsers require a user gesture to unlock AudioContext
+    // Similar to how Gamepad API requires gesture unlock on iOS Safari
+    let audioUnlocked = false
+    const unlockAudio = () => {
+        if (audioUnlocked) return
+        const activeScene = game.scene.getScenes(true)[0]
+        if (!activeScene) return
+
+        const context = activeScene.sound.context
+        if (context && context.state === "suspended") {
+            context.resume().then(() => {
+                AssetGenerator.generateSounds(activeScene)
+                audioUnlocked = true
+            })
+        } else if (context && context.state === "running") {
+            if (!activeScene.cache.audio.exists("navigate")) {
+                AssetGenerator.generateSounds(activeScene)
+            }
+            audioUnlocked = true
+        }
+    }
+
+    // Gamepad API on iOS Safari HTTPS requires a user gesture to unlock
+    const activateGamepad = () => navigator.getGamepads()
+
+    // Combined unlock handler for both audio and gamepad
+    const unlockAll = () => {
+        unlockAudio()
+        activateGamepad()
+    }
+
+    document.addEventListener("touchstart", unlockAll)
+    document.addEventListener("mousedown", unlockAll)
+    document.addEventListener("keydown", unlockAll)
 })

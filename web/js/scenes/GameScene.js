@@ -33,6 +33,7 @@ export class GameScene extends Phaser.Scene {
         // Load settings from profile
         this.showErrors = this.saveManager.getShowErrors()
         this.dimHints = this.saveManager.getDimHints()
+        this.soundEnabled = this.saveManager.getSoundEnabled()
         this.peekErrors = false
 
         // Set background color from theme
@@ -962,7 +963,7 @@ export class GameScene extends Phaser.Scene {
         this.pauseBox.fillStyle(theme.graphics.panelBg, 1)
         this.pauseBox.fillRoundedRect(this.pauseBoxX, this.pauseBoxY, this.pauseBoxWidth, this.pauseBoxHeight, 12)
 
-        this.pauseTitle = this.add.text(this.uiScale.centerX, this.uiScale.centerY - this.uiScale.percent(10), "PAUSED", {
+        this.pauseTitle = this.add.text(this.uiScale.centerX, this.pauseBoxY + this.uiScale.percent(5), "PAUSED", {
             fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.large + "px",
             color: theme.text.primary
@@ -973,11 +974,12 @@ export class GameScene extends Phaser.Scene {
             "Resume",
             "Show Errors: " + (this.showErrors ? "ON" : "OFF"),
             "Dim Hints: " + (this.dimHints ? "ON" : "OFF"),
+            "Sounds: " + (this.soundEnabled ? "ON" : "OFF"),
             "Restart",
             "Exit"
         ]
         this.pauseTexts = []
-        this.pauseMenuStartY = this.uiScale.centerY - this.uiScale.percent(4)
+        this.pauseMenuStartY = this.pauseBoxY + this.uiScale.percent(12)
         this.pauseMenuSpacing = this.uiScale.percent(6)
 
         this.pauseItems.forEach((item, i) => {
@@ -1004,6 +1006,9 @@ export class GameScene extends Phaser.Scene {
         }
         if (this.pauseTexts[2]) {
             this.pauseTexts[2].setText("Dim Hints: " + (this.dimHints ? "ON" : "OFF"))
+        }
+        if (this.pauseTexts[3]) {
+            this.pauseTexts[3].setText("Sounds: " + (this.soundEnabled ? "ON" : "OFF"))
         }
     }
 
@@ -1041,7 +1046,11 @@ export class GameScene extends Phaser.Scene {
                 this.pauseIndex = 2 // Stay on the same menu item
                 this.updatePauseMenu()
                 break
-            case 3: // Restart
+            case 3: // Toggle Sounds
+                this.soundEnabled = this.saveManager.toggleSoundEnabled()
+                this.updatePauseMenu()
+                break
+            case 4: // Restart
                 this.playerGrid = Array(this.puzzle.height)
                     .fill(null)
                     .map(() => Array(this.puzzle.width).fill(this.EMPTY))
@@ -1049,7 +1058,7 @@ export class GameScene extends Phaser.Scene {
                 this.hidePauseMenu()
                 this.refreshUI()
                 break
-            case 4: // Exit
+            case 5: // Exit
                 this.scene.start("PuzzleSelectScene", { infinite: this.infiniteMode })
                 break
         }
@@ -1097,7 +1106,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     playSound(key) {
-        if (this.sound.get(key)) {
+        if (this.soundEnabled && this.cache.audio.exists(key)) {
             this.sound.play(key, { volume: 0.5 })
         }
     }

@@ -57,6 +57,7 @@ export class SaveManager {
             },
             showErrors: false,
             dimHints: true,
+            soundEnabled: true,
             theme: "classic"
         }
     }
@@ -255,6 +256,26 @@ export class SaveManager {
     toggleDimHints() {
         const current = this.getDimHints()
         this.setDimHints(!current)
+        return !current
+    }
+
+    // Get sound enabled setting (defaults to true)
+    getSoundEnabled() {
+        const slotData = this.getCurrentSlotData()
+        return slotData.soundEnabled !== false
+    }
+
+    // Set sound enabled setting
+    setSoundEnabled(value) {
+        const slotData = this.getCurrentSlotData()
+        slotData.soundEnabled = value
+        this.saveCurrentSlotData(slotData)
+    }
+
+    // Toggle sound enabled setting
+    toggleSoundEnabled() {
+        const current = this.getSoundEnabled()
+        this.setSoundEnabled(!current)
         return !current
     }
 
