@@ -18,6 +18,7 @@ export class VictoryScene extends Phaser.Scene {
 
     generateRandomPuzzleName() {
         const adjectives = [
+            // Original
             "Happy",
             "Sleepy",
             "Grumpy",
@@ -47,10 +48,72 @@ export class VictoryScene extends Phaser.Scene {
             "Singing",
             "Flying",
             "Hidden",
-            "Secret"
+            "Secret",
+            // Silly additions
+            "Wobbly",
+            "Squishy",
+            "Fluffy",
+            "Sparkly",
+            "Sneaky",
+            "Bouncy",
+            "Giggly",
+            "Wiggly",
+            "Jiggly",
+            "Bonkers",
+            "Wacky",
+            "Zany",
+            "Goofy",
+            "Dorky",
+            "Funky",
+            "Chunky",
+            "Spunky",
+            "Plucky",
+            "Dizzy",
+            "Fizzy",
+            "Fuzzy",
+            "Snazzy",
+            "Bumbling",
+            "Tumbling",
+            "Mumbling",
+            "Peculiar",
+            "Ridiculous",
+            "Absurd",
+            "Preposterous",
+            "Outrageous",
+            "Confused",
+            "Befuddled",
+            "Bamboozled",
+            "Flummoxed",
+            "Discombobulated",
+            "Suspicious",
+            "Mischievous",
+            "Magnificent",
+            "Spectacular",
+            "Fantastical",
+            "Whimsical",
+            "Incredible",
+            "Unstoppable",
+            "Improbable",
+            "Flamboyant",
+            "Exuberant",
+            "Jubilant",
+            "Defiant",
+            "Radioactive",
+            "Turbocharged",
+            "Overcooked",
+            "Undercooked",
+            "Slightly Damp",
+            "Extremely Online",
+            "Sentient",
+            "Legendary",
+            "Infamous",
+            "Majestic",
+            "Chaotic",
+            "Cranky"
         ]
 
         const nouns = [
+            // Original
             "Cat",
             "Dog",
             "Bird",
@@ -80,20 +143,134 @@ export class VictoryScene extends Phaser.Scene {
             "Sword",
             "Shield",
             "Key",
-            "Heart"
+            "Heart",
+            // Silly additions - Food
+            "Pickle",
+            "Noodle",
+            "Waffle",
+            "Pancake",
+            "Muffin",
+            "Cupcake",
+            "Donut",
+            "Pretzel",
+            "Taco",
+            "Potato",
+            "Banana",
+            "Coconut",
+            "Avocado",
+            "Broccoli",
+            "Turnip",
+            "Cabbage",
+            "Nugget",
+            "Biscuit",
+            // Silly additions - Animals
+            "Penguin",
+            "Platypus",
+            "Narwhal",
+            "Llama",
+            "Alpaca",
+            "Capybara",
+            "Wombat",
+            "Quokka",
+            "Axolotl",
+            "Chinchilla",
+            "Hamster",
+            "Possum",
+            "Raccoon",
+            "Walrus",
+            // Silly additions - Fantasy
+            "Goblin",
+            "Gremlin",
+            "Troll",
+            "Ogre",
+            "Gnome",
+            "Pixie",
+            "Unicorn",
+            "Yeti",
+            "Sasquatch",
+            "Kraken",
+            // Silly additions - Objects
+            "Spatula",
+            "Umbrella",
+            "Trampoline",
+            "Kazoo",
+            "Accordion",
+            "Tuba",
+            "Ukulele",
+            "Banjo",
+            "Tambourine",
+            "Skateboard",
+            "Pogo Stick",
+            "Toaster",
+            "Blender",
+            "Roomba",
+            // Silly additions - Misc
+            "Tornado",
+            "Volcano",
+            "Spaceship",
+            "Submarine",
+            "Mustache",
+            "Eyebrow",
+            "Bellybutton",
+            "Elbow",
+            "Kneecap",
+            "Shenanigans",
+            "Tomfoolery",
+            "Kerfuffle",
+            "Brouhaha",
+            "Ruckus"
         ]
 
         const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
-
-        const adj = pick(adjectives)
-        const noun1 = pick(nouns)
-        let noun2 = pick(nouns)
-        // Ensure noun2 is different from noun1
-        while (noun2 === noun1) {
-            noun2 = pick(nouns)
+        const pickUnique = (arr, exclude) => {
+            let choice = pick(arr)
+            while (choice === exclude) {
+                choice = pick(arr)
+            }
+            return choice
         }
 
-        return `${adj} ${noun1} with a ${noun2}`
+        const templates = [
+            // Classic
+            () => `${pick(adjectives)} ${pick(nouns)} with a ${pick(nouns)}`,
+            // Simple
+            () => `The ${pick(adjectives)} ${pick(nouns)}`,
+            // Epic battle
+            () => {
+                const noun1 = pick(nouns)
+                return `${pick(adjectives)} ${noun1} vs ${pick(adjectives)} ${pickUnique(nouns, noun1)}`
+            },
+            // Belonging
+            () => `${pick(nouns)} of the ${pick(adjectives)} ${pick(nouns)}`,
+            // Duo
+            () => {
+                const noun1 = pick(nouns)
+                return `The ${noun1} and the ${pick(adjectives)} ${pickUnique(nouns, noun1)}`
+            },
+            // Location
+            () => `${pick(adjectives)} ${pick(nouns)} in a ${pick(nouns)}`,
+            // Movie title style
+            () => `Attack of the ${pick(adjectives)} ${pick(nouns)}`,
+            () => `Legend of the ${pick(adjectives)} ${pick(nouns)}`,
+            () => `Return of the ${pick(adjectives)} ${pick(nouns)}`,
+            () => `Revenge of the ${pick(adjectives)} ${pick(nouns)}`,
+            // Dramatic
+            () => {
+                const noun1 = pick(nouns)
+                return `The Great ${noun1} ${pickUnique(nouns, noun1)}`
+            },
+            // Possessive
+            () => `${pick(adjectives)} ${pick(nouns)}'s ${pick(adjectives)} ${pick(nouns)}`,
+            // Question style
+            () => `Who Stole the ${pick(adjectives)} ${pick(nouns)}?`,
+            // Adventure
+            () => `${pick(adjectives)} ${pick(nouns)} Goes to Space`,
+            () => `${pick(adjectives)} ${pick(nouns)} Saves the Day`,
+            // Conspiracy
+            () => `The ${pick(adjectives)} ${pick(nouns)} Conspiracy`
+        ]
+
+        return pick(templates)()
     }
 
     formatTime(seconds) {

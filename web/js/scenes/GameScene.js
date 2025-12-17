@@ -49,8 +49,8 @@ export class GameScene extends Phaser.Scene {
         // Initialize or load puzzle state
         if (this.infiniteMode) {
             this.generateInfinitePuzzle()
-            // Start timer for infinite mode
-            this.gameStartTime = this.time.now
+            // Start timer for infinite mode (use Date.now for reliable reset across scene transitions)
+            this.gameStartTime = Date.now()
         } else {
             this.loadPuzzleState()
         }
@@ -1118,7 +1118,7 @@ export class GameScene extends Phaser.Scene {
         let elapsedTime = null
         if (this.infiniteMode) {
             this.saveManager.incrementInfiniteSolved(this.puzzle.difficulty)
-            elapsedTime = Math.floor((this.time.now - this.gameStartTime) / 1000)
+            elapsedTime = Math.floor((Date.now() - this.gameStartTime) / 1000)
         } else {
             this.saveManager.markPuzzleCompleted(this.puzzle.id)
         }
@@ -1152,7 +1152,7 @@ export class GameScene extends Phaser.Scene {
     updateTimer() {
         if (!this.timerText || this.paused) return
 
-        const elapsed = Math.floor((this.time.now - this.gameStartTime) / 1000)
+        const elapsed = Math.floor((Date.now() - this.gameStartTime) / 1000)
         const minutes = Math.floor(elapsed / 60)
         const seconds = elapsed % 60
         this.timerText.setText(`${minutes}:${seconds.toString().padStart(2, "0")}`)
