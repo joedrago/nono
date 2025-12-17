@@ -56,6 +56,12 @@ export class SaveManager {
                 hard: 0,
                 tony: 0
             },
+            infiniteBestTimes: {
+                easy: null,
+                medium: null,
+                hard: null,
+                tony: null
+            },
             showErrors: false,
             dimHints: true,
             soundEnabled: true,
@@ -84,6 +90,19 @@ export class SaveManager {
             // Add tony field if missing from existing save
             slotData.infiniteSolved.tony = 0
         }
+
+        // Migrate best times if missing
+        if (!slotData.infiniteBestTimes) {
+            slotData.infiniteBestTimes = {
+                easy: null,
+                medium: null,
+                hard: null,
+                tony: null
+            }
+        } else if (slotData.infiniteBestTimes.tony === undefined) {
+            slotData.infiniteBestTimes.tony = null
+        }
+
         return slotData
     }
 
@@ -192,6 +211,26 @@ export class SaveManager {
         const slotData = this.getCurrentSlotData()
         slotData.infiniteSolved[difficulty] = (slotData.infiniteSolved[difficulty] || 0) + 1
         this.saveCurrentSlotData(slotData)
+    }
+
+    // Get best time for infinite mode difficulty (in seconds, null if no time recorded)
+    getInfiniteBestTime(difficulty) {
+        const slotData = this.getCurrentSlotData()
+        return slotData.infiniteBestTimes[difficulty] || null
+    }
+
+    // Set best time for infinite mode difficulty if it's better than current best
+    // Returns true if this was a new record, false otherwise
+    setInfiniteBestTime(difficulty, timeInSeconds) {
+        const slotData = this.getCurrentSlotData()
+        const currentBest = slotData.infiniteBestTimes[difficulty]
+
+        if (currentBest === null || timeInSeconds < currentBest) {
+            slotData.infiniteBestTimes[difficulty] = timeInSeconds
+            this.saveCurrentSlotData(slotData)
+            return true
+        }
+        return false
     }
 
     // Calculate completion percentage

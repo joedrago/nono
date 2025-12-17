@@ -13,6 +13,93 @@ export class VictoryScene extends Phaser.Scene {
     init(data) {
         this.puzzle = data.puzzle
         this.infiniteMode = data.infinite
+        this.elapsedTime = data.elapsedTime
+    }
+
+    generateRandomPuzzleName() {
+        const adjectives = [
+            "Happy",
+            "Sleepy",
+            "Grumpy",
+            "Silly",
+            "Fancy",
+            "Lazy",
+            "Brave",
+            "Clever",
+            "Jolly",
+            "Gentle",
+            "Wild",
+            "Calm",
+            "Proud",
+            "Swift",
+            "Tiny",
+            "Giant",
+            "Ancient",
+            "Young",
+            "Golden",
+            "Silver",
+            "Cosmic",
+            "Mystic",
+            "Royal",
+            "Noble",
+            "Humble",
+            "Dancing",
+            "Singing",
+            "Flying",
+            "Hidden",
+            "Secret"
+        ]
+
+        const nouns = [
+            "Cat",
+            "Dog",
+            "Bird",
+            "Fish",
+            "Bear",
+            "Fox",
+            "Owl",
+            "Frog",
+            "Duck",
+            "Bee",
+            "Tree",
+            "Flower",
+            "Star",
+            "Moon",
+            "Sun",
+            "Cloud",
+            "Mountain",
+            "River",
+            "Castle",
+            "Ship",
+            "Robot",
+            "Dragon",
+            "Knight",
+            "Wizard",
+            "Ghost",
+            "Crown",
+            "Sword",
+            "Shield",
+            "Key",
+            "Heart"
+        ]
+
+        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
+
+        const adj = pick(adjectives)
+        const noun1 = pick(nouns)
+        let noun2 = pick(nouns)
+        // Ensure noun2 is different from noun1
+        while (noun2 === noun1) {
+            noun2 = pick(nouns)
+        }
+
+        return `${adj} ${noun1} with a ${noun2}`
+    }
+
+    formatTime(seconds) {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins}:${secs.toString().padStart(2, "0")}`
     }
 
     create() {
@@ -66,8 +153,9 @@ export class VictoryScene extends Phaser.Scene {
         this.title.setOrigin(0.5)
         this.uiContainer.add(this.title)
 
-        // Puzzle name
-        this.puzzleName = this.add.text(this.uiScale.centerX, this.uiScale.percent(28), this.puzzle.name, {
+        // Puzzle name (random for infinite mode)
+        const displayName = this.infiniteMode ? this.generateRandomPuzzleName() : this.puzzle.name
+        this.puzzleName = this.add.text(this.uiScale.centerX, this.uiScale.percent(28), displayName, {
             fontFamily: theme.font,
             fontSize: this.uiScale.fontSize.large + "px",
             color: theme.text.primary
@@ -80,10 +168,48 @@ export class VictoryScene extends Phaser.Scene {
 
         // Completion stats
         if (this.infiniteMode) {
-            const solved = this.saveManager.getInfiniteSolved()
-            this.statsText = this.add.text(this.uiScale.centerX, this.uiScale.percent(78), `Infinite Puzzles Solved: ${solved}`, {
+            // Check and update best time
+            const difficulty = this.puzzle.difficulty
+            const previousBest = this.saveManager.getInfiniteBestTime(difficulty)
+            const isNewRecord = this.saveManager.setInfiniteBestTime(difficulty, this.elapsedTime)
+            const currentBest = this.saveManager.getInfiniteBestTime(difficulty)
+
+            // Time display
+            const timeStr = this.formatTime(this.elapsedTime)
+            let timeLabel = `Time: ${timeStr}`
+            if (isNewRecord && previousBest !== null) {
+                timeLabel += "  NEW RECORD!"
+            }
+
+            this.timeText = this.add.text(this.uiScale.centerX, this.uiScale.percent(74), timeLabel, {
                 fontFamily: theme.font,
                 fontSize: this.uiScale.fontSize.medium + "px",
+                color: isNewRecord ? theme.text.success : theme.text.stat
+            })
+            this.timeText.setOrigin(0.5)
+            this.uiContainer.add(this.timeText)
+
+            // Best time display
+            const bestTimeStr = this.formatTime(currentBest)
+            const difficultyLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
+            this.bestTimeText = this.add.text(
+                this.uiScale.centerX,
+                this.uiScale.percent(80),
+                `Best ${difficultyLabel}: ${bestTimeStr}`,
+                {
+                    fontFamily: theme.font,
+                    fontSize: this.uiScale.fontSize.small + "px",
+                    color: theme.text.stat
+                }
+            )
+            this.bestTimeText.setOrigin(0.5)
+            this.uiContainer.add(this.bestTimeText)
+
+            // Total solved display
+            const solved = this.saveManager.getInfiniteSolved()
+            this.statsText = this.add.text(this.uiScale.centerX, this.uiScale.percent(85), `Infinite Puzzles Solved: ${solved}`, {
+                fontFamily: theme.font,
+                fontSize: this.uiScale.fontSize.small + "px",
                 color: theme.text.stat
             })
         } else {

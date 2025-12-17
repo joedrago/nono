@@ -49,6 +49,8 @@ export class GameScene extends Phaser.Scene {
         // Initialize or load puzzle state
         if (this.infiniteMode) {
             this.generateInfinitePuzzle()
+            // Start timer for infinite mode
+            this.gameStartTime = this.time.now
         } else {
             this.loadPuzzleState()
         }
@@ -261,6 +263,20 @@ export class GameScene extends Phaser.Scene {
             color: theme.text.subtitle
         })
         this.uiContainer.add(this.nameText)
+
+        // Timer display for infinite mode (top center)
+        if (this.infiniteMode) {
+            this.timerText = this.add.text(this.uiScale.centerX, this.uiScale.percent(3), "0:00", {
+                fontFamily: theme.font,
+                fontSize: this.uiScale.fontSize.medium + "px",
+                color: theme.text.stat
+            })
+            this.timerText.setOrigin(0.5, 0)
+            this.uiContainer.add(this.timerText)
+
+            // Start timer update loop
+            this.events.on("update", this.updateTimer, this)
+        }
 
         // Instructions (hide on touch devices)
         if (!window.nonoTouchDevice) {
@@ -1099,15 +1115,18 @@ export class GameScene extends Phaser.Scene {
         // Victory!
         this.playSound("victory")
 
+        let elapsedTime = null
         if (this.infiniteMode) {
             this.saveManager.incrementInfiniteSolved(this.puzzle.difficulty)
+            elapsedTime = Math.floor((this.time.now - this.gameStartTime) / 1000)
         } else {
             this.saveManager.markPuzzleCompleted(this.puzzle.id)
         }
 
         this.scene.start("VictoryScene", {
             puzzle: this.puzzle,
-            infinite: this.infiniteMode
+            infinite: this.infiniteMode,
+            elapsedTime: elapsedTime
         })
     }
 
@@ -1130,7 +1149,25 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    updateTimer() {
+        if (!this.timerText || this.paused) return
+
+        const elapsed = Math.floor((this.time.now - this.gameStartTime) / 1000)
+        const minutes = Math.floor(elapsed / 60)
+        const seconds = elapsed % 60
+        this.timerText.setText(`${minutes}:${seconds.toString().padStart(2, "0")}`)
+    }
+
+    formatTime(seconds) {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins}:${secs.toString().padStart(2, "0")}`
+    }
+
     shutdown() {
         this.inputManager.clearSceneListeners()
+        if (this.infiniteMode) {
+            this.events.off("update", this.updateTimer, this)
+        }
     }
 }
