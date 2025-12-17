@@ -19,8 +19,8 @@ export class PuzzleSelectScene extends Phaser.Scene {
         this.saveManager = new SaveManager()
         this.themeManager = new ThemeManager(this.saveManager)
 
-        this.difficulties = ["easy", "medium", "hard"]
-        this.difficultyLabels = { easy: "Easy (5x5)", medium: "Medium (10x10)", hard: "Hard (15x15)" }
+        this.difficulties = ["easy", "medium", "hard", "tony"]
+        this.difficultyLabels = { easy: "Easy (5x5)", medium: "Medium (10x10)", hard: "Hard (15x15)", tony: "Tony (12x12)" }
 
         this.gridRows = 6
         this.selectedIndex = 0
@@ -106,7 +106,7 @@ export class PuzzleSelectScene extends Phaser.Scene {
 
         // Infinite puzzles solved counts by difficulty
         const solvedCounts = this.saveManager.getInfiniteSolvedByDifficulty()
-        const total = solvedCounts.easy + solvedCounts.medium + solvedCounts.hard
+        const total = solvedCounts.easy + solvedCounts.medium + solvedCounts.hard + solvedCounts.tony
 
         this.solvedText = this.add.text(this.uiScale.centerX, this.uiScale.percent(22), `Total Solved: ${total}`, {
             fontFamily: theme.font,

@@ -53,7 +53,8 @@ export class SaveManager {
             infiniteSolved: {
                 easy: 0,
                 medium: 0,
-                hard: 0
+                hard: 0,
+                tony: 0
             },
             showErrors: false,
             dimHints: true,
@@ -69,14 +70,19 @@ export class SaveManager {
             slotData.infiniteSolved = {
                 easy: slotData.infiniteSolved,
                 medium: 0,
-                hard: 0
+                hard: 0,
+                tony: 0
             }
         } else if (!slotData.infiniteSolved) {
             slotData.infiniteSolved = {
                 easy: 0,
                 medium: 0,
-                hard: 0
+                hard: 0,
+                tony: 0
             }
+        } else if (slotData.infiniteSolved.tony === undefined) {
+            // Add tony field if missing from existing save
+            slotData.infiniteSolved.tony = 0
         }
         return slotData
     }
@@ -167,7 +173,7 @@ export class SaveManager {
         }
 
         // Return total
-        return (solved.easy || 0) + (solved.medium || 0) + (solved.hard || 0)
+        return (solved.easy || 0) + (solved.medium || 0) + (solved.hard || 0) + (solved.tony || 0)
     }
 
     // Get infinite solved counts by difficulty
@@ -176,7 +182,8 @@ export class SaveManager {
         return {
             easy: slotData.infiniteSolved.easy || 0,
             medium: slotData.infiniteSolved.medium || 0,
-            hard: slotData.infiniteSolved.hard || 0
+            hard: slotData.infiniteSolved.hard || 0,
+            tony: slotData.infiniteSolved.tony || 0
         }
     }
 

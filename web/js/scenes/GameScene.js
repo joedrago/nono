@@ -68,7 +68,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     generateInfinitePuzzle() {
-        const sizes = { easy: 5, medium: 10, hard: 15 }
+        const sizes = { easy: 5, medium: 10, hard: 15, tony: 12 }
         const size = sizes[this.infiniteDifficulty] || 5
         const validator = new NonogramValidator()
 
