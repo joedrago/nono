@@ -532,17 +532,36 @@ export class GameScene extends Phaser.Scene {
         // Grid lines
         this.gridLines = this.add.graphics()
 
-        // Draw thin lines (not on 5th positions or outer border)
+        // Determine major line positions based on divisibility by 5
+        // If not divisible by 5, use halfway point instead of every 5 cells
+        const widthDivisibleBy5 = this.puzzle.width % 5 === 0
+        const heightDivisibleBy5 = this.puzzle.height % 5 === 0
+        const halfwayX = Math.floor(this.puzzle.width / 2)
+        const halfwayY = Math.floor(this.puzzle.height / 2)
+
+        const isMajorX = (x) => {
+            if (x === 0 || x === this.puzzle.width) return true
+            if (widthDivisibleBy5) return x % 5 === 0
+            return x === halfwayX
+        }
+
+        const isMajorY = (y) => {
+            if (y === 0 || y === this.puzzle.height) return true
+            if (heightDivisibleBy5) return y % 5 === 0
+            return y === halfwayY
+        }
+
+        // Draw thin lines (not on major positions)
         this.gridLines.lineStyle(1, theme.graphics.gridLine, 0.5)
         for (let x = 1; x < this.puzzle.width; x++) {
-            if (x % 5 !== 0) {
+            if (!isMajorX(x)) {
                 const lineX = this.gridOffsetX + x * this.cellSize
                 this.gridLines.moveTo(lineX, this.gridOffsetY)
                 this.gridLines.lineTo(lineX, this.gridOffsetY + this.puzzle.height * this.cellSize)
             }
         }
         for (let y = 1; y < this.puzzle.height; y++) {
-            if (y % 5 !== 0) {
+            if (!isMajorY(y)) {
                 const lineY = this.gridOffsetY + y * this.cellSize
                 this.gridLines.moveTo(this.gridOffsetX, lineY)
                 this.gridLines.lineTo(this.gridOffsetX + this.puzzle.width * this.cellSize, lineY)
@@ -550,17 +569,17 @@ export class GameScene extends Phaser.Scene {
         }
         this.gridLines.strokePath()
 
-        // Thicker lines every 5 cells and outer border
+        // Thicker lines at major positions (every 5 cells or halfway, plus outer border)
         this.gridLines.lineStyle(3, theme.graphics.gridLineMajor, 1)
         for (let x = 0; x <= this.puzzle.width; x++) {
-            if (x % 5 === 0 || x === this.puzzle.width) {
+            if (isMajorX(x)) {
                 const lineX = this.gridOffsetX + x * this.cellSize
                 this.gridLines.moveTo(lineX, this.gridOffsetY)
                 this.gridLines.lineTo(lineX, this.gridOffsetY + this.puzzle.height * this.cellSize)
             }
         }
         for (let y = 0; y <= this.puzzle.height; y++) {
-            if (y % 5 === 0 || y === this.puzzle.height) {
+            if (isMajorY(y)) {
                 const lineY = this.gridOffsetY + y * this.cellSize
                 this.gridLines.moveTo(this.gridOffsetX, lineY)
                 this.gridLines.lineTo(this.gridOffsetX + this.puzzle.width * this.cellSize, lineY)
